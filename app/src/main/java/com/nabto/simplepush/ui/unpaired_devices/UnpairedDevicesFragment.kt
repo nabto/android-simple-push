@@ -5,9 +5,10 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
 import com.nabto.simplepush.databinding.UnpairedDevicesFragmentBinding
-import com.nabto.simplepush.model.UnpairedDevice
-import com.nabto.simplepush.ui.main.MainFragment
+import com.nabto.simplepush.model.UnpairedDevicesViewModel
 
 class UnpairedDevicesFragment : Fragment() {
 
@@ -18,7 +19,7 @@ class UnpairedDevicesFragment : Fragment() {
     // Scoped to the lifecycle of the fragment's view (between onCreateView and onDestroyView)
     private var unpairedDevicesFragmentBinding: UnpairedDevicesFragmentBinding? = null
 
-    private var testData : ArrayList<UnpairedDevice> = ArrayList<UnpairedDevice>()
+    private val viewModel: UnpairedDevicesViewModel by viewModels()
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -28,15 +29,12 @@ class UnpairedDevicesFragment : Fragment() {
         val binding = UnpairedDevicesFragmentBinding.inflate(inflater, container, false)
         unpairedDevicesFragmentBinding = binding
 
-        testData.add(UnpairedDevice("foo", "bar"))
-        testData.add(UnpairedDevice("foo", "bar2"))
-        testData.add(UnpairedDevice("foo2", "bar2"))
-        testData.add(UnpairedDevice("foo", "bar"))
-
+        viewModel.devices.observe(viewLifecycleOwner, Observer {  })
 
         val unpairedDevicesAdapter = UnpairedDevicesAdapter()
         binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
-        unpairedDevicesAdapter.submitList(testData)
+
+        viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l) })
         return binding.root
     }
 
