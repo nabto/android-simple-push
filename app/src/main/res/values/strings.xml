@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">AndroidSimplePush</string>
+    <string name="preference_file">com.nabto.simple_push.preferences</string>
+    <string name="preference_private_key">PrivateKey</string>
+    <string name="user_settings_username">Username:</string>
+    <string name="user_settings_enable_notifications">Enable Notifications:</string>
 </resources>

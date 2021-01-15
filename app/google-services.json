@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "166151355515",
+    "project_id": "nabto-simple-push",
+    "storage_bucket": "nabto-simple-push.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:166151355515:android:9f2abd26411b0a4da4b6de",
+        "android_client_info": {
+          "package_name": "com.nabto.simplepush"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "166151355515-io4fatnfroin44aj4dol51bt7dvbilej.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDPVpdJ1wldxsPfNGe1iIl7ws7lchaIJvk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "166151355515-io4fatnfroin44aj4dol51bt7dvbilej.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

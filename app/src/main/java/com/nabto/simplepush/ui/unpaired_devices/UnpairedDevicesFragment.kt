@@ -7,14 +7,20 @@ import android.view.ViewGroup
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
+import androidx.navigation.fragment.findNavController
 import com.nabto.simplepush.databinding.UnpairedDevicesFragmentBinding
+import com.nabto.simplepush.ui.view_model.UnpairedDevicesRowViewModel
 import com.nabto.simplepush.model.UnpairedDevicesViewModel
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
+@AndroidEntryPoint
 class UnpairedDevicesFragment : Fragment() {
 
-    companion object {
-        fun newInstance() = UnpairedDevicesFragment()
-    }
+    //companion object {
+    //    fun newInstance() = UnpairedDevicesFragment()
+    //}
 
     // Scoped to the lifecycle of the fragment's view (between onCreateView and onDestroyView)
     private var unpairedDevicesFragmentBinding: UnpairedDevicesFragmentBinding? = null
@@ -29,13 +35,35 @@ class UnpairedDevicesFragment : Fragment() {
         val binding = UnpairedDevicesFragmentBinding.inflate(inflater, container, false)
         unpairedDevicesFragmentBinding = binding
 
-        viewModel.devices.observe(viewLifecycleOwner, Observer {  })
-
         val unpairedDevicesAdapter = UnpairedDevicesAdapter()
+//        { productId: String, deviceId: String ->
+//            lifecycleScope.launch {
+//                pairDevice(productId,deviceId)
+//            }
+//        }
         binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
 
-        viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l) })
+        viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l.map { UnpairedDevicesRowViewModel(it.productId,it.deviceId) }) })
         return binding.root
+    }
+
+    suspend fun pairDevice(productId : String, deviceId : String) {
+        withContext(Dispatchers.Main) {
+            unpairedDevicesFragmentBinding!!.loader.visibility = View.VISIBLE;
+        }
+
+        withContext(Dispatchers.IO) {
+            viewModel.pairDevice(productId, deviceId)
+        }
+
+
+        withContext(Dispatchers.Main) {
+            unpairedDevicesFragmentBinding!!.loader.visibility = View.GONE;
+        }
+
+        val action =
+            UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToUserSettingsFragment(productId,deviceId)
+        findNavController().navigate(action)
     }
 
     override fun onDestroyView() {

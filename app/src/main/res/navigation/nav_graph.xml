@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/nav_graph"
+    app:startDestination="@id/pairedDevicesFragment">
+
+    <fragment
+        android:id="@+id/pairedDevicesFragment"
+        android:name="com.nabto.simplepush.ui.paired_devices.PairedDevicesFragment"
+        android:label="PairedDevicesFragment">
+        <action
+            android:id="@+id/action_pairedDevicesFragment_to_unpairedDevicesFragment"
+            app:destination="@id/unpairedDevicesFragment" />
+        <action
+            android:id="@+id/action_pairedDevicesFragment_to_userSettingsFragment"
+            app:destination="@id/userSettingsFragment" />
+        <action
+            android:id="@+id/action_pairedDevicesFragment_to_deviceConnectingFragment"
+            app:destination="@id/deviceConnectingFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/unpairedDevicesFragment"
+        android:name="com.nabto.simplepush.ui.unpaired_devices.UnpairedDevicesFragment"
+        android:label="UnpairedDevicesFragment">
+        <action
+            android:id="@+id/action_unpairedDevicesFragment_to_userSettingsFragment"
+            app:destination="@id/userSettingsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/userSettingsFragment"
+        android:name="com.nabto.simplepush.ui.user_settings.UserSettingsFragment"
+        android:label="UserSettingsFragment">
+        <argument
+            android:name="productId"
+            app:argType="string" />
+        <argument
+            android:name="deviceId"
+            app:argType="string" />
+    </fragment>
+    <fragment
+        android:id="@+id/deviceConnectingFragment"
+        android:name="com.nabto.simplepush.ui.device.DeviceConnectingFragment"
+        android:label="DeviceConnectingFragment">
+        <argument
+            android:name="productId"
+            app:argType="string" />
+        <argument
+            android:name="deviceId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_deviceConnectingFragment_to_devicePairFragment"
+            app:destination="@id/devicePairFragment" />
+        <action
+            android:id="@+id/action_deviceConnectingFragment_to_deviceDisconnectedFragment"
+            app:destination="@id/deviceDisconnectedFragment" />
+        <action
+            android:id="@+id/action_deviceConnectingFragment_to_deviceSettingsFragment"
+            app:destination="@id/deviceSettingsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/devicePairFragment"
+        android:name="com.nabto.simplepush.ui.device.DevicePairFragment"
+        android:label="DevicePairFragment" >
+        <argument
+            android:name="productId"
+            app:argType="string" />
+        <argument
+            android:name="deviceId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_devicePairFragment_to_deviceDisconnectedFragment"
+            app:destination="@id/deviceDisconnectedFragment" />
+        <action
+            android:id="@+id/action_devicePairFragment_to_deviceSettingsFragment"
+            app:destination="@id/deviceSettingsFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/deviceSettingsFragment"
+        android:name="com.nabto.simplepush.ui.device.DeviceSettingsFragment"
+        android:label="DeviceSettingsFragment" >
+        <argument
+            android:name="productId"
+            app:argType="string" />
+        <argument
+            android:name="deviceId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_deviceSettingsFragment_to_deviceDisconnectedFragment"
+            app:destination="@id/deviceDisconnectedFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/deviceDisconnectedFragment"
+        android:name="com.nabto.simplepush.ui.device.DeviceDisconnectedFragment"
+        android:label="DeviceDisconnectedFragment" >
+        <argument
+            android:name="productId"
+            app:argType="string" />
+        <argument
+            android:name="deviceId"
+            app:argType="string" />
+        <action
+            android:id="@+id/action_deviceDisconnectedFragment_to_deviceConnectingFragment"
+            app:destination="@id/deviceConnectingFragment" />
+    </fragment>
+</navigation>

@@ -1,42 +1,39 @@
 package com.nabto.simplepush.ui.unpaired_devices
 
 import android.view.LayoutInflater
-import android.view.View
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.nabto.simplepush.databinding.UnpairedDeviceRowBinding
-import com.nabto.simplepush.edge.MdnsDevice
+import com.nabto.simplepush.ui.view_model.UnpairedDevicesRowViewModel
 
-class UnpairedDevicesAdapter : ListAdapter<MdnsDevice, UnpairedDevicesAdapter.UnpairedDeviceViewHolder>(UnpairedDevicesDiffCallback()) {
+class UnpairedDevicesAdapter() : ListAdapter<UnpairedDevicesRowViewModel, UnpairedDevicesAdapter.UnpairedDeviceViewHolder>(UnpairedDevicesDiffCallback()) {
 
-    class UnpairedDeviceViewHolder(view: View) : RecyclerView.ViewHolder(view)
+    class UnpairedDeviceViewHolder(val binding : UnpairedDeviceRowBinding) : RecyclerView.ViewHolder(binding.root)
 
-    override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int) =
-            UnpairedDeviceViewHolder(
-                    UnpairedDeviceRowBinding
-                            .inflate(LayoutInflater.from(viewGroup.context), viewGroup, false)
-                            .root
-            )
+    override fun onCreateViewHolder(viewGroup: ViewGroup, viewType: Int) : UnpairedDevicesAdapter.UnpairedDeviceViewHolder {
+        val layoutInflater = LayoutInflater.from(viewGroup.context)
+        val binding = UnpairedDeviceRowBinding.inflate(layoutInflater)
+        return UnpairedDevicesAdapter.UnpairedDeviceViewHolder(binding)
+    }
+
     override fun onBindViewHolder(viewHolder: UnpairedDeviceViewHolder, position: Int)
     {
-        UnpairedDeviceRowBinding.bind(viewHolder.itemView).apply{
-            var mdnsDevice : MdnsDevice = getItem(position);
-            var foo = itemCount
-            unpairedProductId.text = mdnsDevice.productId;
-            unpairedDeviceId.text = mdnsDevice.deviceId;
-        }
+        var unpairedDevicesViewModel : UnpairedDevicesRowViewModel = getItem(position);
+        viewHolder.binding.item = unpairedDevicesViewModel
+
+        viewHolder.binding.executePendingBindings()
     }
 }
 
 
-class UnpairedDevicesDiffCallback : DiffUtil.ItemCallback<MdnsDevice>() {
-    override fun areItemsTheSame(oldItem: MdnsDevice, newItem: MdnsDevice): Boolean {
+class UnpairedDevicesDiffCallback : DiffUtil.ItemCallback<UnpairedDevicesRowViewModel>() {
+    override fun areItemsTheSame(oldItem: UnpairedDevicesRowViewModel, newItem: UnpairedDevicesRowViewModel): Boolean {
         return oldItem == newItem
     }
 
-    override fun areContentsTheSame(oldItem: MdnsDevice, newItem: MdnsDevice): Boolean {
+    override fun areContentsTheSame(oldItem: UnpairedDevicesRowViewModel, newItem: UnpairedDevicesRowViewModel): Boolean {
         return oldItem.productId == newItem.productId &&
                 oldItem.deviceId == newItem.deviceId
     }

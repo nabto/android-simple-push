@@ -1,19 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout
-    xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent"
-    android:layout_height="wrap_content">
+<layout xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <TextView
-        android:id="@+id/unpaired_product_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginRight="6dip"
-        android:text="TextView" />
+    <data>
 
-    <TextView
-        android:id="@+id/unpaired_device_id"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/unpaired_product_id"
-        android:text="TextView" />
-</RelativeLayout>
+        <variable
+            name="item"
+            type="com.nabto.simplepush.ui.view_model.UnpairedDevicesRowViewModel" />
+    </data>
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <TextView
+                android:id="@+id/unpaired_product_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginLeft="6dip"
+                android:layout_marginRight="6dip"
+                android:text="@{item.productId}" />
+
+            <TextView
+                android:id="@+id/unpaired_device_id"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginRight="6dip"
+                android:layout_toRightOf="@id/unpaired_product_id"
+                android:text="@{item.deviceId}" />
+
+            <Space
+                android:layout_width="0dp"
+                android:layout_height="0dp"
+                android:layout_weight="1" />
+
+            <Button
+                android:id="@+id/button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="right"
+                android:layout_marginRight="6dip"
+                android:layout_toRightOf="@id/unpaired_device_id"
+                android:onClick="@{view -> item.onClick(view) }"
+                android:text="Pair" />
+        </LinearLayout>
+    </RelativeLayout>
+</layout>
