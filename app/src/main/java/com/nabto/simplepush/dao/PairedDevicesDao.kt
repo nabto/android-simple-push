@@ -11,6 +11,9 @@ interface PairedDevicesDao {
     @Query("SELECT * FROM paired_devices")
     fun listPairedDevides() : LiveData<List<PairedDeviceEntity>>
 
+    @Query("SELECT * FROM paired_devices")
+    fun getPairedDevices() : List<PairedDeviceEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsertPairedDevice(pairedDeviceEntity: PairedDeviceEntity)
 

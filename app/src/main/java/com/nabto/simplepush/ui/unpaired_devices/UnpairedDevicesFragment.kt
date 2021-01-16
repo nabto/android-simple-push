@@ -47,22 +47,9 @@ class UnpairedDevicesFragment : Fragment() {
         return binding.root
     }
 
-    suspend fun pairDevice(productId : String, deviceId : String) {
-        withContext(Dispatchers.Main) {
-            unpairedDevicesFragmentBinding!!.loader.visibility = View.VISIBLE;
-        }
-
-        withContext(Dispatchers.IO) {
-            viewModel.pairDevice(productId, deviceId)
-        }
-
-
-        withContext(Dispatchers.Main) {
-            unpairedDevicesFragmentBinding!!.loader.visibility = View.GONE;
-        }
-
+    fun pairDevice(productId : String, deviceId : String) {
         val action =
-            UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToUserSettingsFragment(productId,deviceId)
+            UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToDeviceConnectingFragment(productId,deviceId)
         findNavController().navigate(action)
     }
 

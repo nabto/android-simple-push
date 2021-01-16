@@ -12,30 +12,19 @@
             android:id="@+id/action_pairedDevicesFragment_to_unpairedDevicesFragment"
             app:destination="@id/unpairedDevicesFragment" />
         <action
-            android:id="@+id/action_pairedDevicesFragment_to_userSettingsFragment"
-            app:destination="@id/userSettingsFragment" />
-        <action
             android:id="@+id/action_pairedDevicesFragment_to_deviceConnectingFragment"
             app:destination="@id/deviceConnectingFragment" />
+        <action
+            android:id="@+id/action_pairedDevicesFragment_to_deviceSettingsFragment"
+            app:destination="@id/deviceSettingsFragment" />
     </fragment>
     <fragment
         android:id="@+id/unpairedDevicesFragment"
         android:name="com.nabto.simplepush.ui.unpaired_devices.UnpairedDevicesFragment"
         android:label="UnpairedDevicesFragment">
         <action
-            android:id="@+id/action_unpairedDevicesFragment_to_userSettingsFragment"
-            app:destination="@id/userSettingsFragment" />
-    </fragment>
-    <fragment
-        android:id="@+id/userSettingsFragment"
-        android:name="com.nabto.simplepush.ui.user_settings.UserSettingsFragment"
-        android:label="UserSettingsFragment">
-        <argument
-            android:name="productId"
-            app:argType="string" />
-        <argument
-            android:name="deviceId"
-            app:argType="string" />
+            android:id="@+id/action_unpairedDevicesFragment_to_deviceConnectingFragment"
+            app:destination="@id/deviceConnectingFragment" />
     </fragment>
     <fragment
         android:id="@+id/deviceConnectingFragment"
@@ -102,4 +91,7 @@
             android:id="@+id/action_deviceDisconnectedFragment_to_deviceConnectingFragment"
             app:destination="@id/deviceConnectingFragment" />
     </fragment>
+    <action
+        android:id="@+id/action_global_deviceDisconnectedFragment"
+        app:destination="@id/deviceDisconnectedFragment" />
 </navigation>

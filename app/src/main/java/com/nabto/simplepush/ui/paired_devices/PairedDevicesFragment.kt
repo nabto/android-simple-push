@@ -30,17 +30,18 @@ class PairedDevicesFragment : Fragment() {
         val binding = PairedDevicesFragmentBinding.inflate(inflater, container, false)
         pairedDevicesFragmentBinding = binding
 
-        val pairedDevicesAdapter = PairedDevicesAdapter {
-                productId : String, deviceId : String ->
-            val action = PairedDevicesFragmentDirections.actionPairedDevicesFragmentToUserSettingsFragment(productId,deviceId)
-            findNavController().navigate(action)
-        }
+        val pairedDevicesAdapter = PairedDevicesAdapter()
         binding.pairedDevicesList.adapter = pairedDevicesAdapter
 
-        binding.pairNewDevice.setOnClickListener { view -> view.findNavController().navigate(R.id.action_pairedDevicesFragment_to_unpairedDevicesFragment ) }
+        binding.pairNewDevice.setOnClickListener {
+            var action =
+                PairedDevicesFragmentDirections.actionPairedDevicesFragmentToUnpairedDevicesFragment()
+            findNavController().navigate(action)
+        }
 
         viewModel.pairedDevices.observe(viewLifecycleOwner, Observer {
-            l -> pairedDevicesAdapter.submitList(l.map { PairedDevicesRowViewModel(it.productId, it.deviceId, it.updatedFcmToken) }) })
+            l -> pairedDevicesAdapter.submitList(l.map { PairedDevicesRowViewModel(it.productId, it.deviceId, it.updatedFcmToken) })
+        })
 
         return binding.root
     }

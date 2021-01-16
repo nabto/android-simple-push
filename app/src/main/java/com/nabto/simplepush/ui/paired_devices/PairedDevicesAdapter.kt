@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.nabto.simplepush.databinding.PairedDeviceRowBinding
 import com.nabto.simplepush.ui.view_model.PairedDevicesRowViewModel
 
-class PairedDevicesAdapter(val onclick : (String, String) -> Unit ) : ListAdapter<PairedDevicesRowViewModel, PairedDevicesAdapter.PairedDeviceViewHolder>(PairedDevicesDiffCallback()) {
+class PairedDevicesAdapter() : ListAdapter<PairedDevicesRowViewModel, PairedDevicesAdapter.PairedDeviceViewHolder>(PairedDevicesDiffCallback()) {
 
     class PairedDeviceViewHolder(val binding: PairedDeviceRowBinding ) : RecyclerView.ViewHolder(binding.root)
 

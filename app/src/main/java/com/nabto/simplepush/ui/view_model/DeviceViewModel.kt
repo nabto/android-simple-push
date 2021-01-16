@@ -1,9 +1,11 @@
 package com.nabto.simplepush.ui.view_model
 
 import android.app.Application
+import android.view.View
+import android.widget.Switch
 import android.widget.Toast
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
+import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.messaging.FirebaseMessaging
 import com.nabto.edge.client.NabtoClient
@@ -13,9 +15,7 @@ import kotlinx.coroutines.launch
 import com.nabto.simplepush.dao.PairedDeviceEntity
 import com.nabto.simplepush.edge.*
 import com.nabto.simplepush.model.Empty
-import com.nabto.simplepush.ui.device.DeviceConnectingFragment
-import com.nabto.simplepush.ui.device.DeviceConnectingFragmentArgs
-import com.nabto.simplepush.ui.device.DeviceConnectingFragmentDirections
+import com.nabto.simplepush.ui.device.*
 import com.nabto.simplepush.ui.paired_devices.PairedDevicesFragmentDirections
 import kotlinx.coroutines.tasks.await
 
@@ -26,8 +26,13 @@ sealed class DeviceConnectResult {
 }
 
 sealed class DeviceUpdateFcmResult {
-    class Connected() : DeviceUpdateFcmResult();
+    class Success() : DeviceUpdateFcmResult();
     class Error(val error : Throwable) : DeviceUpdateFcmResult()
+}
+
+sealed class DevicePairResult {
+    class Paired() : DevicePairResult()
+    class Error(val error : Throwable) : DevicePairResult()
 }
 
 class DeviceViewModel constructor(val application : Application,
@@ -40,7 +45,61 @@ class DeviceViewModel constructor(val application : Application,
 
     lateinit var connection : Connection;
 
+    val user : MutableLiveData<User> = MutableLiveData()
 
+
+
+    var lastError : MutableLiveData<String> = MutableLiveData("")
+
+    val notificationAlarmState : LiveData<Boolean> =
+        Transformations.map(user) {
+                u -> u.NotificationCategories?.contains("Alarm")
+        }
+
+    val notificationWarningState : LiveData<Boolean> =
+        Transformations.map(user) { u -> u.NotificationCategories?.contains("Warn") }
+
+    val notificationInfoState : LiveData<Boolean> =
+        Transformations.map(user) { u -> u.NotificationCategories?.contains("Info") }
+
+    fun notificationCategoriesChanged(view : View, category : String, state : Boolean)
+    {
+        var u : User = user.value!!;
+        if (u.NotificationCategories == null) {
+            u.NotificationCategories = HashSet<String>()
+        }
+        if (state) {
+            u.NotificationCategories?.add(category);
+        } else {
+            u.NotificationCategories?.remove(category)
+        }
+        user.postValue(u);
+        updateNotificationCategories(view, u.NotificationCategories!!)
+    }
+
+    fun updateLastError(err : Throwable) {
+        lastError.postValue(err.toString())
+    }
+
+    fun updateNotificationCategories(view : View, categories : Set<String>) {
+        viewModelScope.launch {
+            var result = IAM.setUserNotificationCategories(
+                connection.connection,
+                user.value!!.Username,
+                categories
+            )
+            when(result) {
+                is Result.Success<Empty> -> {
+                    // do nothing
+                }
+                is Result.Error -> {
+                    updateLastError(result.exception);
+                    var action = DeviceSettingsFragmentDirections.actionDeviceSettingsFragmentToDeviceDisconnectedFragment(productId,deviceId)
+                    view.findNavController().navigate(action);
+                }
+            }
+        }
+    }
 
     suspend fun connect() : DeviceConnectResult {
         connection = Connection(nabtoClient, settings)
@@ -53,6 +112,7 @@ class DeviceViewModel constructor(val application : Application,
                 } catch (e: Exception) {
                     // the device is not found in our local database of devices
                     // goto pairing.
+                        updateLastError(e)
                     return DeviceConnectResult.Unpaired()
                 }
                 // TODO check fingerprint of the device that it matches the fingerprint in the database
@@ -60,23 +120,29 @@ class DeviceViewModel constructor(val application : Application,
                 var result = IAM.getMe(connection.connection)
                 when (result) {
                     is Result.Error -> {
+                        updateLastError(result.exception)
                         return DeviceConnectResult.Unpaired()
                     }
                     is Result.Success<User> -> {
+                        user.postValue(result.data);
                         if (pairedDeviceEntity.updatedFcmToken) {
                             return DeviceConnectResult.Connected()
                         } else {
 
                             var updateFcmResult = updateFcm(result.data)
                             when(updateFcmResult) {
-                                is DeviceUpdateFcmResult.Connected -> return DeviceConnectResult.Connected()
-                                is DeviceUpdateFcmResult.Error -> return DeviceConnectResult.Error(updateFcmResult.error)
+                                is DeviceUpdateFcmResult.Success -> return DeviceConnectResult.Connected()
+                                is DeviceUpdateFcmResult.Error -> {
+                                    updateLastError(updateFcmResult.error)
+                                    return DeviceConnectResult.Error(updateFcmResult.error)
+                                }
                             }
                         }
                     }
                 }
             }
             is ConnectResult.Error -> {
+                updateLastError(result.error)
                 return DeviceConnectResult.Error(result.error);
             }
         }
@@ -86,47 +152,81 @@ class DeviceViewModel constructor(val application : Application,
         var result = IAM.getMe(connection.connection)
     }
 
-    fun pair() {
-        viewModelScope.launch {
-            val me = IAM.getMe(connection.connection);
-            when(me) {
-                is Result.Success<User> -> {
-                    // the user is already paired update the database with the device and navigate to the device.
-                    pairedDevicesDao.upsertPairedDevice(PairedDeviceEntity(productId, deviceId, me.data.Sct ?: "", me.data.Fingerprint?:"", false))
+    suspend fun upsertDeviceInDatabase(user : User) {
+        pairedDevicesDao.upsertPairedDevice(
+                    PairedDeviceEntity(
+                        productId,
+                        deviceId,
+                        user.Sct ?: "",
+                        connection.connection.deviceFingerprint,
+                        false
+                    )
+                )
+    }
 
-
-                    Toast.makeText(application, "Already paired", Toast.LENGTH_LONG).show()
-                    // We was paired and now redirect to update fcm
+    suspend fun getUserAndUpdateState() : DevicePairResult {
+        var me = IAM.getMe(connection.connection);
+        when (me) {
+            is Result.Success<User> -> {
+                upsertDeviceInDatabase(me.data)
+                var updateFcmResult = updateFcm(me.data)
+                when (updateFcmResult) {
+                    is DeviceUpdateFcmResult.Success -> return DevicePairResult.Paired()
+                    is DeviceUpdateFcmResult.Error -> {
+                        updateLastError(updateFcmResult.error)
+                        return DevicePairResult.Error(updateFcmResult.error)
+                    }
                 }
             }
-
-            val result = IAM.openLocalPair(connection.connection, "foo")
-            when (result) {
-                is Result.Success<Unit> -> {}
-                is Result.Error -> {
-                    val e = result;
-                    Toast.makeText(application, e.exception.message, Toast.LENGTH_LONG ).show()
-                }
+            is Result.Error -> {
+                updateLastError(me.exception)
+                DevicePairResult.Error(me.exception)
             }
         }
+        return DevicePairResult.Error(Exception("Never here"))
+    }
+
+
+    suspend fun pair(username: String): DevicePairResult {
+        var r = getUserAndUpdateState()
+        when (r) {
+            is DevicePairResult.Paired -> return DevicePairResult.Paired()
+        }
+        // we are not paired or some error happened.
+        val result = IAM.openLocalPair(connection.connection, username)
+        when (result) {
+            is Result.Error -> {
+                updateLastError(result.exception)
+                return DevicePairResult.Error(result.exception)
+            }
+        }
+        return getUserAndUpdateState()
     }
 
     suspend fun updateFcm(user : User) : DeviceUpdateFcmResult {
-
-
         var t : String = FirebaseMessaging.getInstance().token.await();
 
         var fcm : Fcm = Fcm(t, application.getString(R.string.project_id));
 
         var r = IAM.setUserFcm(connection.connection, user.Username, fcm)
         when(r) {
-            is Result.Error -> return DeviceUpdateFcmResult.Error(r.exception)
+            is Result.Error -> {
+                updateLastError(r.exception)
+                return DeviceUpdateFcmResult.Error(r.exception)
+            }
             is Result.Success<Empty> -> {
                 pairedDevicesDao.updateFcmStatus(productId,deviceId);
-                return DeviceUpdateFcmResult.Connected()
+                return DeviceUpdateFcmResult.Success()
             }
         }
     }
 
+    fun reconnectClick(view : View) {
+        var action = DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceConnectingFragment(productId,deviceId)
+        view.findNavController().navigate(action);
+        viewModelScope.launch {
+            connect();
+        }
+    }
 
 }

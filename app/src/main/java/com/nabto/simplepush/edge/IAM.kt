@@ -33,7 +33,7 @@ class User(
     val Sct: String?,
     val Role: String?,
     val Fcm: Fcm?,
-    val NotificationCategories: List<String>?
+    var NotificationCategories: HashSet<String>?
 ) {
 }
 class LocalOpenPairRequest() {
@@ -124,4 +124,36 @@ object IAM {
             return@withContext result
         }
     }
+
+    suspend fun setUserNotificationCategories(connection: Connection, username : String, categories : Set<String>) : Result<Empty> {
+        return withContext(Dispatchers.IO) {
+            try {
+                var coap = connection.createCoap(
+                    "PUT",
+                    "/iam/users/" + username + "/notification-categories"
+                )
+
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                val cborData = mapper.writeValueAsBytes(categories);
+                coap.setRequestPayload(60, cborData);
+                coap.execute();
+                var result: Result<Empty>
+                if (coap.responseStatusCode != 204) {
+                    result = Result.Error(
+                        WrongStatusCodeException(
+                            204,
+                            coap.responseStatusCode
+                        )
+                    )
+                } else {
+                    result = Result.Success<Empty>(Empty());
+                }
+                return@withContext result
+            } catch (e : Throwable) {
+                return@withContext Result.Error(e)
+            }
+        }
+    }
+
 }

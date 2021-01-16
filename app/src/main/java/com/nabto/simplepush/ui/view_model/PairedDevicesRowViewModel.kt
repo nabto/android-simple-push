@@ -8,7 +8,7 @@ import com.nabto.simplepush.ui.paired_devices.PairedDevicesFragmentDirections
 data class PairedDevicesRowViewModel(val productId : String, val deviceId : String, val updatedFcmToken : Boolean) {
 
     fun onClick(view : View) {
-        val action = PairedDevicesFragmentDirections.actionPairedDevicesFragmentToDeviceConnectingFragment(productId,deviceId)
+        val action = PairedDevicesFragmentDirections.actionPairedDevicesFragmentToDeviceSettingsFragment(productId,deviceId)
         view.findNavController().navigate(action);
     }
 }
