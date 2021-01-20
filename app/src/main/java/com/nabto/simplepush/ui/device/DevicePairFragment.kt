@@ -19,7 +19,7 @@ class DevicePairFragment : DeviceFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val safeArgs: DeviceConnectingFragmentArgs by navArgs()
+        val safeArgs: DevicePairFragmentArgs by navArgs()
         initViewModel(safeArgs.productId, safeArgs.deviceId)
 
         binding = DevicePairFragmentBinding.inflate(inflater, container, false)

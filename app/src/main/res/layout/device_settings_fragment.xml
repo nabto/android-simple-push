@@ -10,6 +10,9 @@
         <variable
             name="viewModel"
             type="com.nabto.simplepush.ui.view_model.DeviceViewModel" />
+        <variable
+            name="fragment"
+            type="com.nabto.simplepush.ui.device.DeviceSettingsFragment" />
     </data>
 
     <androidx.constraintlayout.widget.ConstraintLayout
@@ -46,7 +49,7 @@
                 android:id="@+id/alarm_notifications"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> viewModel.notificationCategoriesChanged(switch, "Alarm", state)}'
+                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Alarm", state)}'
                 android:checked="@{viewModel.notificationAlarmState}"
                 android:text="Alarms" />
 
@@ -54,15 +57,15 @@
                 android:id="@+id/warn_notifications"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> viewModel.notificationCategoriesChanged(switch, "Warn", state)}'
+                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Warn", state)}'
                 android:checked="@{viewModel.notificationWarningState}"
-                android:text="Alarms" />
+                android:text="Warn" />
 
             <Switch
                 android:id="@+id/info_notifications"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> viewModel.notificationCategoriesChanged(switch, "Info", state)}'
+                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Info", state)}'
                 android:checked="@{viewModel.notificationInfoState}"
                 android:text="Info" />
         </LinearLayout>

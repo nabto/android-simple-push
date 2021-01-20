@@ -7,7 +7,7 @@ import com.nabto.simplepush.ui.unpaired_devices.UnpairedDevicesFragmentDirection
 
 data class UnpairedDevicesRowViewModel(val productId : String, val deviceId :String) {
     fun onClick(view : View) {
-        val action = UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToDeviceConnectingFragment(productId,deviceId)
+        val action = UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToDeviceSettingsFragment(productId,deviceId)
         view.findNavController().navigate(action);
     }
 }

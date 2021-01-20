@@ -19,9 +19,9 @@ class PairedDeviceImpl(
     override val fingerprint: String
 ) : PairedDevice {
     override suspend fun updateFcmToken() : Result<Empty> {
-        var connection : Connection = Connection(nabtoClient, settings);
+        var connection : Connection = Connection(nabtoClient, settings, productId, deviceId);
 
-        var connectResult = connection.connect(productId, deviceId);
+        var connectResult = connection.connect();
         when (connectResult) {
             is ConnectResult.Error -> return Result.Error(connectResult.error)
         }

@@ -73,8 +73,8 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
 
     suspend fun updateTokenOnDevice(productId : String, deviceId : String, token : String) : UpdateTokenResult {
         val device = pairedDevicesDao.getDevice(productId,deviceId)
-        var connection : Connection = Connection(nabtoClient,settings);
-        var connectResult = connection.connect(productId,deviceId);
+        var connection : Connection = Connection(nabtoClient,settings, productId, deviceId);
+        var connectResult = connection.connect();
         when(connectResult) {
             is ConnectResult.Error -> return UpdateTokenResult.Error(connectResult.error)
             is ConnectResult.Success -> {

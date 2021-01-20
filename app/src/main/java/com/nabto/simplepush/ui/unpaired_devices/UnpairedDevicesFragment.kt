@@ -36,21 +36,11 @@ class UnpairedDevicesFragment : Fragment() {
         unpairedDevicesFragmentBinding = binding
 
         val unpairedDevicesAdapter = UnpairedDevicesAdapter()
-//        { productId: String, deviceId: String ->
-//            lifecycleScope.launch {
-//                pairDevice(productId,deviceId)
-//            }
-//        }
+
         binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
 
         viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l.map { UnpairedDevicesRowViewModel(it.productId,it.deviceId) }) })
         return binding.root
-    }
-
-    fun pairDevice(productId : String, deviceId : String) {
-        val action =
-            UnpairedDevicesFragmentDirections.actionUnpairedDevicesFragmentToDeviceConnectingFragment(productId,deviceId)
-        findNavController().navigate(action)
     }
 
     override fun onDestroyView() {

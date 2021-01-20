@@ -27,7 +27,7 @@ class UnpairedDevicesViewModel @ViewModelInject constructor(private val nabtoCli
                                                             private val settings: Settings,
                                                             private val pairedDevicesRepository: PairedDevicesRepository,
                                                             @ApplicationContext val context : Context) : ViewModel() {
-    val scanner = MdnsScanner(nabtoClient, "heatpump");
+    val scanner = MdnsScanner(nabtoClient, "simplepush");
     val devices : LiveData<List<MdnsDevice>> = scanner.devices;
 
     val isPairing : LiveData<Boolean> = MutableLiveData<Boolean>(false);
@@ -35,8 +35,8 @@ class UnpairedDevicesViewModel @ViewModelInject constructor(private val nabtoCli
 
     suspend fun pairDevice(productId : String, deviceId: String) {
         viewModelScope.launch {
-            var connection: Connection = Connection(nabtoClient, settings)
-            connection.connect(productId, deviceId);
+            var connection: Connection = Connection(nabtoClient, settings, productId, deviceId)
+            connection.connect();
 
             val me = IAM.getMe(connection.connection);
             when(me) {

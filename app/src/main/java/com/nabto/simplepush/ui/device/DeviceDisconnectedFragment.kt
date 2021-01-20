@@ -14,7 +14,7 @@ class DeviceDisconnectedFragment : DeviceFragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val safeArgs: DeviceConnectingFragmentArgs by navArgs()
+        val safeArgs: DeviceDisconnectedFragmentArgs by navArgs()
         initViewModel(safeArgs.productId, safeArgs.deviceId)
 
         binding = DeviceDisconnectedFragmentBinding.inflate(inflater, container, false)

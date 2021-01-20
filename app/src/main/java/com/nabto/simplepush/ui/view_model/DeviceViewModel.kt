@@ -1,10 +1,12 @@
 package com.nabto.simplepush.ui.view_model
 
 import android.app.Application
+import android.util.Log
 import android.view.View
 import android.widget.Switch
 import android.widget.Toast
 import androidx.lifecycle.*
+import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.messaging.FirebaseMessaging
@@ -17,7 +19,9 @@ import com.nabto.simplepush.edge.*
 import com.nabto.simplepush.model.Empty
 import com.nabto.simplepush.ui.device.*
 import com.nabto.simplepush.ui.paired_devices.PairedDevicesFragmentDirections
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 
 sealed class DeviceConnectResult {
     class Unpaired() : DeviceConnectResult();
@@ -33,6 +37,11 @@ sealed class DeviceUpdateFcmResult {
 sealed class DevicePairResult {
     class Paired() : DevicePairResult()
     class Error(val error : Throwable) : DevicePairResult()
+}
+
+sealed class NotificationCategoriesChangedResult {
+    class Success() : NotificationCategoriesChangedResult();
+    class Error(val error : Throwable) : NotificationCategoriesChangedResult()
 }
 
 class DeviceViewModel constructor(val application : Application,
@@ -62,7 +71,7 @@ class DeviceViewModel constructor(val application : Application,
     val notificationInfoState : LiveData<Boolean> =
         Transformations.map(user) { u -> u.NotificationCategories?.contains("Info") }
 
-    fun notificationCategoriesChanged(view : View, category : String, state : Boolean)
+    suspend fun notificationCategoriesChanged(category : String, state : Boolean) : NotificationCategoriesChangedResult
     {
         var u : User = user.value!!;
         if (u.NotificationCategories == null) {
@@ -74,36 +83,30 @@ class DeviceViewModel constructor(val application : Application,
             u.NotificationCategories?.remove(category)
         }
         user.postValue(u);
-        updateNotificationCategories(view, u.NotificationCategories!!)
+
+        return updateNotificationCategories(u.NotificationCategories!!)
     }
 
     fun updateLastError(err : Throwable) {
         lastError.postValue(err.toString())
     }
 
-    fun updateNotificationCategories(view : View, categories : Set<String>) {
-        viewModelScope.launch {
-            var result = IAM.setUserNotificationCategories(
-                connection.connection,
-                user.value!!.Username,
-                categories
-            )
-            when(result) {
-                is Result.Success<Empty> -> {
-                    // do nothing
-                }
-                is Result.Error -> {
-                    updateLastError(result.exception);
-                    var action = DeviceSettingsFragmentDirections.actionDeviceSettingsFragmentToDeviceDisconnectedFragment(productId,deviceId)
-                    view.findNavController().navigate(action);
-                }
-            }
+    suspend fun updateNotificationCategories(categories : Set<String>) : NotificationCategoriesChangedResult {
+        var result = IAM.setUserNotificationCategories(
+            connection.connection,
+            user.value!!.Username,
+            categories
+        )
+        when (result) {
+            is Result.Success<Empty> -> return NotificationCategoriesChangedResult.Success()
+            is Result.Error -> return NotificationCategoriesChangedResult.Error(result.exception)
         }
     }
 
+
     suspend fun connect() : DeviceConnectResult {
-        connection = Connection(nabtoClient, settings)
-        var result = connection.connect(productId, deviceId);
+        connection = Connection(nabtoClient, settings, productId, deviceId)
+        var result = connection.connect();
         when (result) {
             is ConnectResult.Success -> {
                 var pairedDeviceEntity : PairedDeviceEntity
@@ -116,7 +119,6 @@ class DeviceViewModel constructor(val application : Application,
                     return DeviceConnectResult.Unpaired()
                 }
                 // TODO check fingerprint of the device that it matches the fingerprint in the database
-
                 var result = IAM.getMe(connection.connection)
                 when (result) {
                     is Result.Error -> {
@@ -221,8 +223,12 @@ class DeviceViewModel constructor(val application : Application,
         }
     }
 
+    suspend fun reconnect() {
+        connect();
+    }
+
     fun reconnectClick(view : View) {
-        var action = DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceConnectingFragment(productId,deviceId)
+        var action = DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceSettingsFragment(productId,deviceId)
         view.findNavController().navigate(action);
         viewModelScope.launch {
             connect();

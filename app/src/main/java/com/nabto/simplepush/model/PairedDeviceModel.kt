@@ -30,9 +30,9 @@ class PairedDeviceModel(
         return GetUserResult.Error(NotImplementedError("foo"))
     }
     suspend fun updateFcmToken() : UpdateFcmTokenResult {
-        var connection : Connection = Connection(nabtoClient, settings);
+        var connection : Connection = Connection(nabtoClient, settings,productId, deviceId);
 
-        var connectResult = connection.connect(productId, deviceId);
+        var connectResult = connection.connect();
         when (connectResult) {
             is ConnectResult.Error -> return UpdateFcmTokenResult.Error(connectResult.error)
         }
