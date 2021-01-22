@@ -21,4 +21,12 @@ class Settings(val nabtoClient: NabtoClient, val context: Context) {
 
         return sharedPref.getString(context.getString(R.string.preference_private_key), null) ?: return "";
     }
+
+    fun getNabtoServerKey() : String {
+        return context.getString(R.string.nabto_server_key)
+    }
+
+    fun getNabtoServerUrl(productId : String) : String {
+        return "https://"+productId+context.getString(R.string.nabto_server_url_suffix)
+    }
 }

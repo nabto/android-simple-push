@@ -10,7 +10,9 @@ import androidx.navigation.NavController
 import androidx.navigation.findNavController
 import androidx.navigation.fragment.findNavController
 import com.google.firebase.messaging.FirebaseMessaging
+import com.nabto.edge.client.ErrorCode
 import com.nabto.edge.client.NabtoClient
+import com.nabto.edge.client.NabtoNoChannelsException
 import com.nabto.simplepush.R
 import com.nabto.simplepush.dao.PairedDevicesDao
 import kotlinx.coroutines.launch
@@ -26,54 +28,56 @@ import kotlinx.coroutines.withContext
 sealed class DeviceConnectResult {
     class Unpaired() : DeviceConnectResult();
     class Connected() : DeviceConnectResult();
-    class Error(error : Throwable) : DeviceConnectResult();
+    class Error(error: Throwable) : DeviceConnectResult();
 }
 
 sealed class DeviceUpdateFcmResult {
     class Success() : DeviceUpdateFcmResult();
-    class Error(val error : Throwable) : DeviceUpdateFcmResult()
+    class Error(val error: Throwable) : DeviceUpdateFcmResult()
 }
 
 sealed class DevicePairResult {
     class Paired() : DevicePairResult()
-    class Error(val error : Throwable) : DevicePairResult()
+    class Error(val error: Throwable) : DevicePairResult()
 }
 
 sealed class NotificationCategoriesChangedResult {
     class Success() : NotificationCategoriesChangedResult();
-    class Error(val error : Throwable) : NotificationCategoriesChangedResult()
+    class Error(val error: Throwable) : NotificationCategoriesChangedResult()
 }
 
-class DeviceViewModel constructor(val application : Application,
-                                  val pairedDevicesDao: PairedDevicesDao,
-                                  val settings : Settings,
-                                  val nabtoClient: NabtoClient,
-                                  val productId : String,
-                                  val deviceId : String) : ViewModel()
-{
+class DeviceViewModel constructor(
+    val application: Application,
+    val pairedDevicesDao: PairedDevicesDao,
+    val settings: Settings,
+    val nabtoClient: NabtoClient,
+    val productId: String,
+    val deviceId: String
+) : ViewModel() {
 
-    lateinit var connection : Connection;
+    lateinit var connection: Connection;
 
-    val user : MutableLiveData<User> = MutableLiveData()
+    val user: MutableLiveData<User> = MutableLiveData()
 
 
+    var lastError: MutableLiveData<String> = MutableLiveData("")
 
-    var lastError : MutableLiveData<String> = MutableLiveData("")
-
-    val notificationAlarmState : LiveData<Boolean> =
-        Transformations.map(user) {
-                u -> u.NotificationCategories?.contains("Alarm")
+    val notificationAlarmState: LiveData<Boolean> =
+        Transformations.map(user) { u ->
+            u.NotificationCategories?.contains("Alarm")
         }
 
-    val notificationWarningState : LiveData<Boolean> =
+    val notificationWarningState: LiveData<Boolean> =
         Transformations.map(user) { u -> u.NotificationCategories?.contains("Warn") }
 
-    val notificationInfoState : LiveData<Boolean> =
+    val notificationInfoState: LiveData<Boolean> =
         Transformations.map(user) { u -> u.NotificationCategories?.contains("Info") }
 
-    suspend fun notificationCategoriesChanged(category : String, state : Boolean) : NotificationCategoriesChangedResult
-    {
-        var u : User = user.value!!;
+    suspend fun notificationCategoriesChanged(
+        category: String,
+        state: Boolean
+    ): NotificationCategoriesChangedResult {
+        var u: User = user.value!!;
         if (u.NotificationCategories == null) {
             u.NotificationCategories = HashSet<String>()
         }
@@ -87,11 +91,11 @@ class DeviceViewModel constructor(val application : Application,
         return updateNotificationCategories(u.NotificationCategories!!)
     }
 
-    fun updateLastError(err : Throwable) {
+    fun updateLastError(err: Throwable) {
         lastError.postValue(err.toString())
     }
 
-    suspend fun updateNotificationCategories(categories : Set<String>) : NotificationCategoriesChangedResult {
+    suspend fun updateNotificationCategories(categories: Set<String>): NotificationCategoriesChangedResult {
         var result = IAM.setUserNotificationCategories(
             connection.connection,
             user.value!!.Username,
@@ -104,24 +108,24 @@ class DeviceViewModel constructor(val application : Application,
     }
 
 
-    suspend fun connect() : DeviceConnectResult {
+    suspend fun connect(): DeviceConnectResult {
+        var pairedDeviceEntity: PairedDeviceEntity
+        try {
+            pairedDeviceEntity = pairedDevicesDao.getDevice(productId, deviceId)
+        } catch (e: Exception) {
+            // the device is not found in our local database of devices
+            // goto pairing.
+            updateLastError(e)
+            return DeviceConnectResult.Unpaired()
+        }
         connection = Connection(nabtoClient, settings, productId, deviceId)
-        var result = connection.connect();
+        var result = connection.connect(pairedDeviceEntity.sct, pairedDeviceEntity.fingerprint);
         when (result) {
             is ConnectResult.Success -> {
-                var pairedDeviceEntity : PairedDeviceEntity
-                try {
-                    pairedDeviceEntity = pairedDevicesDao.getDevice(productId, deviceId)
-                } catch (e: Exception) {
-                    // the device is not found in our local database of devices
-                    // goto pairing.
-                        updateLastError(e)
-                    return DeviceConnectResult.Unpaired()
-                }
-                // TODO check fingerprint of the device that it matches the fingerprint in the database
                 var result = IAM.getMe(connection.connection)
                 when (result) {
                     is Result.Error -> {
+
                         updateLastError(result.exception)
                         return DeviceConnectResult.Unpaired()
                     }
@@ -132,7 +136,7 @@ class DeviceViewModel constructor(val application : Application,
                         } else {
 
                             var updateFcmResult = updateFcm(result.data)
-                            when(updateFcmResult) {
+                            when (updateFcmResult) {
                                 is DeviceUpdateFcmResult.Success -> return DeviceConnectResult.Connected()
                                 is DeviceUpdateFcmResult.Error -> {
                                     updateLastError(updateFcmResult.error)
@@ -144,6 +148,15 @@ class DeviceViewModel constructor(val application : Application,
                 }
             }
             is ConnectResult.Error -> {
+                when (result.error) {
+                    is NabtoNoChannelsException -> {
+                        var e : NabtoNoChannelsException = result.error as NabtoNoChannelsException
+                        var remoteError : ErrorCode = e.remoteChannelErrorCode
+                        var localError : ErrorCode = e.localChannelErrorCode
+
+                        Log.d(TAG, "LocalError ${localError.description}, remoteError ${remoteError.description}");
+                    }
+                }
                 updateLastError(result.error)
                 return DeviceConnectResult.Error(result.error);
             }
@@ -154,19 +167,19 @@ class DeviceViewModel constructor(val application : Application,
         var result = IAM.getMe(connection.connection)
     }
 
-    suspend fun upsertDeviceInDatabase(user : User) {
+    suspend fun upsertDeviceInDatabase(user: User) {
         pairedDevicesDao.upsertPairedDevice(
-                    PairedDeviceEntity(
-                        productId,
-                        deviceId,
-                        user.Sct ?: "",
-                        connection.connection.deviceFingerprint,
-                        false
-                    )
-                )
+            PairedDeviceEntity(
+                productId,
+                deviceId,
+                user.Sct ?: "",
+                connection.connection.deviceFingerprint,
+                false
+            )
+        )
     }
 
-    suspend fun getUserAndUpdateState() : DevicePairResult {
+    suspend fun getUserAndUpdateState(): DevicePairResult {
         var me = IAM.getMe(connection.connection);
         when (me) {
             is Result.Success<User> -> {
@@ -205,19 +218,19 @@ class DeviceViewModel constructor(val application : Application,
         return getUserAndUpdateState()
     }
 
-    suspend fun updateFcm(user : User) : DeviceUpdateFcmResult {
-        var t : String = FirebaseMessaging.getInstance().token.await();
+    suspend fun updateFcm(user: User): DeviceUpdateFcmResult {
+        var t: String = FirebaseMessaging.getInstance().token.await();
 
-        var fcm : Fcm = Fcm(t, application.getString(R.string.project_id));
+        var fcm: Fcm = Fcm(t, application.getString(R.string.project_id));
 
         var r = IAM.setUserFcm(connection.connection, user.Username, fcm)
-        when(r) {
+        when (r) {
             is Result.Error -> {
                 updateLastError(r.exception)
                 return DeviceUpdateFcmResult.Error(r.exception)
             }
             is Result.Success<Empty> -> {
-                pairedDevicesDao.updateFcmStatus(productId,deviceId);
+                pairedDevicesDao.updateFcmStatus(productId, deviceId);
                 return DeviceUpdateFcmResult.Success()
             }
         }
@@ -227,12 +240,20 @@ class DeviceViewModel constructor(val application : Application,
         connect();
     }
 
-    fun reconnectClick(view : View) {
-        var action = DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceSettingsFragment(productId,deviceId)
+    fun reconnectClick(view: View) {
+        var action =
+            DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceSettingsFragment(
+                productId,
+                deviceId
+            )
         view.findNavController().navigate(action);
         viewModelScope.launch {
             connect();
         }
+    }
+
+    companion object {
+        public const val TAG : String = "DeviceViewModel"
     }
 
 }

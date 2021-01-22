@@ -38,6 +38,9 @@ class Connection(val nabtoClient : NabtoClient, val settings: Settings, val prod
             options.put("ProductId", productId);
             options.put("DeviceId", deviceId);
             options.put("PrivateKey", settings.getPrivateKey())
+            options.put("ServerKey", settings.getNabtoServerKey())
+            options.put("ServerUrl", settings.getNabtoServerUrl(productId))
+
             connection.updateOptions(options.toString());
             try {
                 connection.connect()
@@ -47,6 +50,32 @@ class Connection(val nabtoClient : NabtoClient, val settings: Settings, val prod
             return@withContext ConnectResult.Success()
         }
     }
+
+    suspend fun connect(sct: String, fingerprint: String): ConnectResult {
+        return withContext(Dispatchers.IO) {
+            var options: JSONObject = JSONObject()
+            options.put("ProductId", productId);
+            options.put("DeviceId", deviceId);
+            options.put("PrivateKey", settings.getPrivateKey())
+            options.put("ServerKey", settings.getNabtoServerKey())
+            options.put("ServerUrl", settings.getNabtoServerUrl(productId))
+            options.put("ServerConnectToken", sct)
+
+            connection.updateOptions(options.toString());
+            try {
+                connection.connect()
+            } catch (e: Exception) {
+                return@withContext ConnectResult.Error(e);
+            }
+            if (connection.deviceFingerprint == fingerprint) {
+                return@withContext ConnectResult.Success()
+            } else {
+                return@withContext ConnectResult.Error(Exception("Fingerprint mismatch"))
+            }
+
+        }
+    }
+
 
     suspend fun coapRequest(coapRequest : CoapRequest) : CoapRequestResult {
         // try the request if the status is not connected, reconnect and try the request again.

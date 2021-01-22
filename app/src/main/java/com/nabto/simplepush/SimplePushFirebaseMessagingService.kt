@@ -10,10 +10,7 @@ import com.nabto.simplepush.dao.PairedDeviceEntity
 import com.nabto.simplepush.dao.PairedDevicesDao
 import com.nabto.simplepush.edge.*
 import dagger.hilt.android.AndroidEntryPoint
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 import javax.inject.Inject
 
 sealed class UpdateTokenResult {
@@ -53,9 +50,11 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
     }
 
     suspend fun updateTokensOnAllDevices(token : String) {
-        var devices = pairedDevicesDao.getPairedDevices()
-        for (device in devices) {
-            updateDeviceAndUpdateDatabase(device, token)
+        withContext(Dispatchers.IO) {
+            var devices = pairedDevicesDao.getPairedDevices()
+            for (device in devices) {
+                updateDeviceAndUpdateDatabase(device, token)
+            }
         }
     }
 

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="nabto_server_key">sk-961f95523bba03c38e35d455ec95a741</string>
+    <string name="nabto_server_url_suffix">.clients.dev.nabto.net</string>
+</resources>
