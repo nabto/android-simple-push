@@ -2,8 +2,6 @@ package com.nabto.simplepush.dao
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
-import com.nabto.simplepush.repository.PairedDevice
-import com.nabto.simplepush.repository.PairedDeviceImpl
 
 @Entity(primaryKeys = ["product_id", "device_id"], tableName = "paired_devices")
 data class PairedDeviceEntity (

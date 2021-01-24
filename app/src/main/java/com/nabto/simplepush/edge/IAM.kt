@@ -21,9 +21,27 @@ sealed class Result<out R> {
     data class Error(val exception: Throwable) : Result<Nothing>()
 }
 
+sealed class GetMeResult {
+    class Error(val error: Throwable) : GetMeResult()
+    class NotPaired() : GetMeResult()
+    class Success(val user: User) : GetMeResult()
+}
+
+sealed class OpenLocalPairResult {
+    class Error(val error: Throwable) : OpenLocalPairResult()
+    class UsernameExists() : OpenLocalPairResult()
+    class Success() : OpenLocalPairResult()
+}
+
+class NotificationCategories {
+
+}
 
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
-class Fcm(@JsonProperty("Token") val Token : String, @JsonProperty("ProjectId") val ProjectId : String) {
+class Fcm(
+    @JsonProperty("Token") val Token: String,
+    @JsonProperty("ProjectId") val ProjectId: String
+) {
 }
 
 class User(
@@ -36,96 +54,122 @@ class User(
     var NotificationCategories: HashSet<String>?
 ) {
 }
+
 class LocalOpenPairRequest() {
-    @JsonProperty("Username", required = true) var username : String = ""
+    @JsonProperty("Username", required = true)
+    var username: String = ""
 
 }
 
-class WrongStatusCodeException(val expected: Int, val actual: Int) : Exception("Wrong status returned expected: " + expected + " actual: " + actual) {}
-class WrongContentFormatException(val expected: Int, val actual: Int) : Exception("Wrong content format returned expected: " + expected + " actual: " + actual) {}
+class WrongStatusCodeException(val expected: Int, val actual: Int) :
+    Exception("Wrong status returned expected: " + expected + " actual: " + actual) {}
+
+class WrongContentFormatException(val expected: Int, val actual: Int) :
+    Exception("Wrong content format returned expected: " + expected + " actual: " + actual) {}
 
 object IAM {
     suspend fun openLocalPair(
         connection: Connection,
         username: String
-    ): Result<Unit> {
+    ): OpenLocalPairResult {
         return withContext(Dispatchers.IO) {
-            var coap = connection.createCoap("POST", "iam/pairing/local-open")
-            var f = CBORFactory();
-            var mapper = ObjectMapper(f);
-            var r = LocalOpenPairRequest();
-            r.username = username
-            val cborData = mapper.writeValueAsBytes(r);
-            coap.setRequestPayload(60, cborData);
-            coap.execute();
-            var result : Result<Unit>
-            if (coap.responseStatusCode != 201) {
-                result = Result.Error(
-                    WrongStatusCodeException(
-                        201,
-                        coap.responseStatusCode
+            try {
+                var coap = connection.createCoap("POST", "iam/pairing/local-open")
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                var r = LocalOpenPairRequest();
+                r.username = username
+                val cborData = mapper.writeValueAsBytes(r);
+                coap.setRequestPayload(60, cborData);
+                coap.execute();
+                var result: Result<Unit>
+                if (coap.responseStatusCode == 409) {
+                    return@withContext OpenLocalPairResult.UsernameExists()
+                }
+                if (coap.responseStatusCode != 201) {
+                    return@withContext OpenLocalPairResult.Error(
+                        WrongStatusCodeException(
+                            201,
+                            coap.responseStatusCode
+                        )
                     )
-                )
-            } else {
-                result = Result.Success<Unit>(Unit);
+                } else {
+                    return@withContext OpenLocalPairResult.Success();
+                }
+            } catch (e: Throwable) {
+                return@withContext OpenLocalPairResult.Error(e);
             }
-            return@withContext result
         }
     }
 
-    suspend fun getMe(connection: Connection): Result<User> {
+    suspend fun getMe(connection: Connection): GetMeResult {
         return withContext(Dispatchers.IO) {
-            var coap = connection.createCoap("GET", "/iam/me")
-            coap.execute()
-            if (coap.responseStatusCode != 205) {
-                return@withContext Result.Error(
-                    WrongStatusCodeException(
-                        205,
-                        coap.responseStatusCode
+            try {
+                var coap = connection.createCoap("GET", "/iam/me")
+                coap.execute()
+                if (coap.responseStatusCode == 404) {
+                    return@withContext GetMeResult.NotPaired()
+                }
+                if (coap.responseStatusCode != 205) {
+                    return@withContext GetMeResult.Error(
+                        WrongStatusCodeException(
+                            205,
+                            coap.responseStatusCode
+                        )
                     )
-                )
-            }
-            if (coap.responseContentFormat != 60) {
-                return@withContext Result.Error(
-                    WrongContentFormatException(
-                        60,
-                        coap.responseContentFormat
+                }
+                if (coap.responseContentFormat != 60) {
+                    return@withContext GetMeResult.Error(
+                        WrongContentFormatException(
+                            60,
+                            coap.responseContentFormat
+                        )
                     )
-                )
+                }
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                mapper.registerKotlinModule()
+                var user = mapper.readValue<User>(coap.responsePayload)
+                return@withContext GetMeResult.Success(user)
+            } catch (e: Throwable) {
+                return@withContext GetMeResult.Error(e);
             }
-            var f = CBORFactory();
-            var mapper = ObjectMapper(f);
-            mapper.registerKotlinModule()
-            var user = mapper.readValue<User>(coap.responsePayload)
-            return@withContext Result.Success(user)
         }
     }
 
-    suspend fun setUserFcm(connection: Connection, username : String, fcm : Fcm) : Result<Empty> {
+    suspend fun setUserFcm(connection: Connection, username: String, fcm: Fcm): Result<Empty> {
         return withContext(Dispatchers.IO) {
-            var coap = connection.createCoap("PUT", "/iam/users/" + username + "/fcm")
+            try {
+                var coap = connection.createCoap("PUT", "/iam/users/" + username + "/fcm")
 
-            var f = CBORFactory();
-            var mapper = ObjectMapper(f);
-            val cborData = mapper.writeValueAsBytes(fcm);
-            coap.setRequestPayload(60, cborData);
-            coap.execute();
-            var result : Result<Empty>
-            if (coap.responseStatusCode != 204) {
-                result = Result.Error(
-                    WrongStatusCodeException(
-                        204,
-                        coap.responseStatusCode
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                val cborData = mapper.writeValueAsBytes(fcm);
+                coap.setRequestPayload(60, cborData);
+                coap.execute();
+                var result: Result<Empty>
+                if (coap.responseStatusCode != 204) {
+                    result = Result.Error(
+                        WrongStatusCodeException(
+                            204,
+                            coap.responseStatusCode
+                        )
                     )
-                )
-            } else {
-                result = Result.Success<Empty>(Empty());
+                } else {
+                    result = Result.Success<Empty>(Empty());
+                }
+                return@withContext result
+            } catch (e: Throwable) {
+                return@withContext Result.Error(e);
             }
-            return@withContext result
         }
     }
 
-    suspend fun setUserNotificationCategories(connection: Connection, username : String, categories : Set<String>) : Result<Empty> {
+    suspend fun setUserNotificationCategories(
+        connection: Connection,
+        username: String,
+        categories: Set<String>
+    ): Result<Empty> {
         return withContext(Dispatchers.IO) {
             try {
                 var coap = connection.createCoap(
@@ -150,10 +194,39 @@ object IAM {
                     result = Result.Success<Empty>(Empty());
                 }
                 return@withContext result
-            } catch (e : Throwable) {
+            } catch (e: Throwable) {
                 return@withContext Result.Error(e)
             }
         }
     }
 
+    suspend fun getNotificationCategories(connection : Connection) : Result<List<String> > {
+        return withContext(Dispatchers.IO) {
+            try {
+                var coap = connection.createCoap(
+                    "GET",
+                    "/iam/notification-categories"
+                )
+
+                coap.execute();
+                if (coap.responseStatusCode != 205) {
+                    return@withContext Result.Error(
+                        WrongStatusCodeException(
+                            204,
+                            coap.responseStatusCode
+                        )
+                    )
+                }
+
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                mapper.registerKotlinModule()
+                var categories : List<String> = mapper.readValue<List<String>>(coap.responsePayload)
+
+                return@withContext Result.Success<List<String>>(categories)
+            } catch (e: Throwable) {
+                return@withContext Result.Error(e)
+            }
+        }
+    }
 }

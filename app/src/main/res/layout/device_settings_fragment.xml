@@ -7,9 +7,12 @@
 
         <import type="android.view.View" />
 
+        <import type="com.nabto.simplepush.ui.view_model.DeviceViewModelState" />
+
         <variable
             name="viewModel"
             type="com.nabto.simplepush.ui.view_model.DeviceViewModel" />
+
         <variable
             name="fragment"
             type="com.nabto.simplepush.ui.device.DeviceSettingsFragment" />
@@ -19,61 +22,116 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent">
 
-        <TextView
-            android:id="@+id/header"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="settings"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toTopOf="parent" />
-
-        <TextView
-            android:id="@+id/notifications"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Notification Settings"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/header" />
-
-        <LinearLayout
+        <androidx.constraintlayout.widget.ConstraintLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintLeft_toLeftOf="parent"
-            app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/notifications"
-            android:orientation="vertical">
+            android:layout_height="match_parent"
+            android:visibility="@{(viewModel.state == DeviceViewModelState.NOT_PAIRED)? View.VISIBLE : View.GONE}">
 
-            <Switch
-                android:id="@+id/alarm_notifications"
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Alarm", state)}'
-                android:checked="@{viewModel.notificationAlarmState}"
-                android:text="Alarms" />
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <Switch
-                android:id="@+id/warn_notifications"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="You are not paired with the device" />
+
+                <Button
+                    android:id="@+id/not_paired"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Pair device" />
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="@{(viewModel.state == DeviceViewModelState.ERROR)? View.VISIBLE : View.GONE}">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Warn", state)}'
-                android:checked="@{viewModel.notificationWarningState}"
-                android:text="Warn" />
+                android:orientation="vertical"
+                app:layout_constraintBottom_toBottomOf="parent"
+                app:layout_constraintLeft_toLeftOf="parent"
+                app:layout_constraintRight_toRightOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-            <Switch
-                android:id="@+id/info_notifications"
+
+                <TextView
+                    android:id="@+id/textView"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="An error happened" />
+
+                <TextView
+                    android:id="@+id/errorText"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@{viewModel.lastError}" />
+
+                <Button
+                    android:id="@+id/reconnect"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Reconnect" />
+            </LinearLayout>
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            android:visibility="@{(viewModel.state == DeviceViewModelState.SETTINGS)? View.VISIBLE : View.GONE}">
+
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:onCheckedChanged='@{(switch, state) -> fragment.notificationCategoriesChanged("Info", state)}'
-                android:checked="@{viewModel.notificationInfoState}"
-                android:text="Info" />
-        </LinearLayout>
+                android:orientation="vertical"
+                app:layout_constraintStart_toStartOf="parent"
+                app:layout_constraintEnd_toEndOf="parent"
+                app:layout_constraintTop_toTopOf="parent">
 
-        <include
-            android:id="@+id/llProgressBar"
-            android:visibility="@{viewModel.user == null ? View.VISIBLE : View.GONE }"
-            layout="@layout/loading"/>
+                <TextView
+                    android:id="@+id/header"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="settings" />
+
+                <TextView
+                    android:id="@+id/notifications"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Notification Settings" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/notification_categories_list"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:listitem="@layout/notification_category_row" />
+            </LinearLayout>
+
+
+        </androidx.constraintlayout.widget.ConstraintLayout>
+
+        <androidx.constraintlayout.widget.ConstraintLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <include
+                android:id="@+id/llProgressBar"
+                layout="@layout/loading"
+                android:visibility="@{viewModel.loading? View.VISIBLE : View.GONE }" />
+        </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 </layout>

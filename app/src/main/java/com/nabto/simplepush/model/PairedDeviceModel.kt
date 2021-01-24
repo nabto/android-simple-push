@@ -6,7 +6,7 @@ import com.nabto.edge.client.NabtoClient
 import com.nabto.simplepush.R
 import com.nabto.simplepush.edge.*
 import kotlinx.coroutines.tasks.await
-import java.lang.Exception
+import kotlin.Exception
 
 sealed class GetUserResult {
     data class Success(val user : User) : GetUserResult();
@@ -44,8 +44,9 @@ class PairedDeviceModel(
         var user : User
         var u = IAM.getMe(connection.connection)
         when(u) {
-            is Result.Error -> return UpdateFcmTokenResult.Error(u.exception)
-            is Result.Success<User> -> user = u.data;
+            is GetMeResult.Error -> return UpdateFcmTokenResult.Error(u.error)
+            is GetMeResult.NotPaired -> return UpdateFcmTokenResult.Error(Exception("Not paired"))
+            is GetMeResult.Success -> user = u.user;
         }
 
         var r = IAM.setUserFcm(connection.connection, user.Username, fcm)

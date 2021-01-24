@@ -29,35 +29,4 @@ class UnpairedDevicesViewModel @ViewModelInject constructor(private val nabtoCli
                                                             @ApplicationContext val context : Context) : ViewModel() {
     val scanner = MdnsScanner(nabtoClient, "simplepush");
     val devices : LiveData<List<MdnsDevice>> = scanner.devices;
-
-    val isPairing : LiveData<Boolean> = MutableLiveData<Boolean>(false);
-
-
-    suspend fun pairDevice(productId : String, deviceId: String) {
-        viewModelScope.launch {
-            var connection: Connection = Connection(nabtoClient, settings, productId, deviceId)
-            connection.connect();
-
-            val me = IAM.getMe(connection.connection);
-            when(me) {
-                is Success<User> -> {
-                    // the user is already paired update the database with the device and navigate to the device.
-                    pairedDevicesRepository.upsertPairedDevice(productId, deviceId, me.data.Sct ?: "", me.data.Fingerprint?:"");
-                    Toast.makeText(context, "Already paired", Toast.LENGTH_LONG).show()
-                }
-                is Result.Error -> {
-                    Toast.makeText(context, me.exception.message, Toast.LENGTH_LONG).show()
-                }
-            }
-
-            val result = IAM.openLocalPair(connection.connection, "foo")
-            when (result) {
-                is Success<Unit> -> {}
-                is Result.Error -> {
-                    val e = result;
-                    Toast.makeText(context, e.exception.message, Toast.LENGTH_LONG ).show()
-                }
-            }
-        }
-    }
 }

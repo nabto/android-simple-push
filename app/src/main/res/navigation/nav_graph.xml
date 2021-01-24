@@ -20,12 +20,12 @@
         android:name="com.nabto.simplepush.ui.unpaired_devices.UnpairedDevicesFragment"
         android:label="UnpairedDevicesFragment">
         <action
-            android:id="@+id/action_unpairedDevicesFragment_to_deviceSettingsFragment"
-            app:destination="@id/deviceSettingsFragment" />
+            android:id="@+id/action_unpairedDevicesFragment_to_devicePairFragment"
+            app:destination="@id/devicePairFragment" />
     </fragment>
     <fragment
         android:id="@+id/devicePairFragment"
-        android:name="com.nabto.simplepush.ui.device.DevicePairFragment"
+        android:name="com.nabto.simplepush.ui.device.PairingFragment"
         android:label="DevicePairFragment" >
         <argument
             android:name="productId"
@@ -33,9 +33,6 @@
         <argument
             android:name="deviceId"
             app:argType="string" />
-        <action
-            android:id="@+id/action_devicePairFragment_to_deviceDisconnectedFragment"
-            app:destination="@id/deviceDisconnectedFragment" />
         <action
             android:id="@+id/action_devicePairFragment_to_deviceSettingsFragment"
             app:destination="@id/deviceSettingsFragment" />
@@ -51,27 +48,7 @@
             android:name="deviceId"
             app:argType="string" />
         <action
-            android:id="@+id/action_deviceSettingsFragment_to_deviceDisconnectedFragment"
-            app:destination="@id/deviceDisconnectedFragment" />
-        <action
             android:id="@+id/action_deviceSettingsFragment_to_devicePairFragment"
             app:destination="@id/devicePairFragment" />
     </fragment>
-    <fragment
-        android:id="@+id/deviceDisconnectedFragment"
-        android:name="com.nabto.simplepush.ui.device.DeviceDisconnectedFragment"
-        android:label="DeviceDisconnectedFragment" >
-        <argument
-            android:name="productId"
-            app:argType="string" />
-        <argument
-            android:name="deviceId"
-            app:argType="string" />
-        <action
-            android:id="@+id/action_deviceDisconnectedFragment_to_deviceSettingsFragment"
-            app:destination="@id/deviceSettingsFragment" />
-    </fragment>
-    <action
-        android:id="@+id/action_global_deviceDisconnectedFragment"
-        app:destination="@id/deviceDisconnectedFragment" />
 </navigation>

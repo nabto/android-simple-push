@@ -79,10 +79,12 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
             is ConnectResult.Success -> {
                 var me = IAM.getMe(connection.connection)
                 when (me) {
-                    is Result.Error -> return UpdateTokenResult.Error(me.exception)
-                    is Result.Success<User> -> {
+                    is GetMeResult.Error -> return UpdateTokenResult.Error(me.error)
+                    is GetMeResult.NotPaired -> return UpdateTokenResult.Error(Exception("Not paired"));
+                    is GetMeResult.Success -> {
                         var fcm : Fcm = Fcm(application.getString(R.string.project_id), token)
-                        var setFcmResult = IAM.setUserFcm(connection.connection, me.data.Username, fcm);
+                        var user = me.user
+                        var setFcmResult = IAM.setUserFcm(connection.connection, user.Username, fcm);
                         when (setFcmResult) {
                             is Result.Success -> return UpdateTokenResult.Success()
                             is Result.Error -> return UpdateTokenResult.Error(setFcmResult.exception)

@@ -28,7 +28,7 @@ import kotlinx.coroutines.withContext
 sealed class DeviceConnectResult {
     class Unpaired() : DeviceConnectResult();
     class Connected() : DeviceConnectResult();
-    class Error(error: Throwable) : DeviceConnectResult();
+    class Error(val error: Throwable) : DeviceConnectResult();
 }
 
 sealed class DeviceUpdateFcmResult {
@@ -36,14 +36,13 @@ sealed class DeviceUpdateFcmResult {
     class Error(val error: Throwable) : DeviceUpdateFcmResult()
 }
 
-sealed class DevicePairResult {
-    class Paired() : DevicePairResult()
-    class Error(val error: Throwable) : DevicePairResult()
-}
-
 sealed class NotificationCategoriesChangedResult {
     class Success() : NotificationCategoriesChangedResult();
     class Error(val error: Throwable) : NotificationCategoriesChangedResult()
+}
+
+enum class DeviceViewModelState {
+    SETTINGS, ERROR, NOT_PAIRED
 }
 
 class DeviceViewModel constructor(
@@ -57,8 +56,22 @@ class DeviceViewModel constructor(
 
     lateinit var connection: Connection;
 
+    val state: MutableLiveData<DeviceViewModelState> = MutableLiveData(DeviceViewModelState.SETTINGS)
+
+    val loading : MutableLiveData<Boolean> = MutableLiveData(false)
+
     val user: MutableLiveData<User> = MutableLiveData()
 
+    val notificationCategories : MutableLiveData<Set<String>> = MutableLiveData(HashSet<String>())
+
+    val notificationCategoryState : HashMap<String, MutableLiveData<Boolean>> = HashMap<String, MutableLiveData<Boolean>>()
+
+    fun getNotificationCategoryState(category : String) : MutableLiveData<Boolean> {
+        if (!notificationCategoryState.containsKey(category)) {
+            notificationCategoryState[category] = MutableLiveData(false)
+        }
+        return notificationCategoryState[category]!!
+    }
 
     var lastError: MutableLiveData<String> = MutableLiveData("")
 
@@ -76,7 +89,7 @@ class DeviceViewModel constructor(
     suspend fun notificationCategoriesChanged(
         category: String,
         state: Boolean
-    ): NotificationCategoriesChangedResult {
+    ) {
         var u: User = user.value!!;
         if (u.NotificationCategories == null) {
             u.NotificationCategories = HashSet<String>()
@@ -88,34 +101,77 @@ class DeviceViewModel constructor(
         }
         user.postValue(u);
 
-        return updateNotificationCategories(u.NotificationCategories!!)
+        updateNotificationCategories(u.NotificationCategories!!)
     }
 
     fun updateLastError(err: Throwable) {
         lastError.postValue(err.toString())
     }
 
-    suspend fun updateNotificationCategories(categories: Set<String>): NotificationCategoriesChangedResult {
+    suspend fun updateNotificationCategories(categories: Set<String>) {
         var result = IAM.setUserNotificationCategories(
             connection.connection,
             user.value!!.Username,
             categories
         )
         when (result) {
-            is Result.Success<Empty> -> return NotificationCategoriesChangedResult.Success()
-            is Result.Error -> return NotificationCategoriesChangedResult.Error(result.exception)
+            is Result.Success<Empty> -> {
+                // nothing
+            }
+            is Result.Error -> {
+                setError(result.exception)
+            }
         }
     }
 
+    fun setError(error : Throwable) {
+        lastError.postValue(error.toString())
+        state.postValue(DeviceViewModelState.ERROR)
+    }
+
+    suspend fun start() {
+        loading.postValue(true)
+        var r = doStart()
+        loading.postValue(false)
+
+        when (r) {
+            is DeviceConnectResult.Unpaired -> {
+                state.postValue(DeviceViewModelState.NOT_PAIRED)
+            }
+            is DeviceConnectResult.Connected -> {
+                state.postValue(DeviceViewModelState.SETTINGS)
+            }
+            is DeviceConnectResult.Error -> {
+                setError(r.error);
+            }
+        }
+    }
+
+    suspend fun doStart(): DeviceConnectResult {
+        var r = connect()
+        when (r) {
+            is DeviceConnectResult.Connected -> {
+                var cats = IAM.getNotificationCategories(connection.connection)
+                when (cats) {
+                    is Result.Success<List<String>> -> {
+                        notificationCategories.postValue(HashSet<String>(cats.data))
+                        return DeviceConnectResult.Connected()
+                    }
+                    is Result.Error -> {
+                        return DeviceConnectResult.Error(cats.exception)
+                    }
+                }
+            }
+        }
+        return r;
+
+    }
 
     suspend fun connect(): DeviceConnectResult {
         var pairedDeviceEntity: PairedDeviceEntity
         try {
             pairedDeviceEntity = pairedDevicesDao.getDevice(productId, deviceId)
         } catch (e: Exception) {
-            // the device is not found in our local database of devices
-            // goto pairing.
-            updateLastError(e)
             return DeviceConnectResult.Unpaired()
         }
         connection = Connection(nabtoClient, settings, productId, deviceId)
@@ -124,18 +180,19 @@ class DeviceViewModel constructor(
             is ConnectResult.Success -> {
                 var result = IAM.getMe(connection.connection)
                 when (result) {
-                    is Result.Error -> {
-
-                        updateLastError(result.exception)
+                    is GetMeResult.Error -> {
+                        return DeviceConnectResult.Error(result.error)
+                    }
+                    is GetMeResult.NotPaired -> {
                         return DeviceConnectResult.Unpaired()
                     }
-                    is Result.Success<User> -> {
-                        user.postValue(result.data);
+                    is GetMeResult.Success -> {
+                        user.postValue(result.user);
                         if (pairedDeviceEntity.updatedFcmToken) {
                             return DeviceConnectResult.Connected()
                         } else {
 
-                            var updateFcmResult = updateFcm(result.data)
+                            var updateFcmResult = updateFcm(result.user)
                             when (updateFcmResult) {
                                 is DeviceUpdateFcmResult.Success -> return DeviceConnectResult.Connected()
                                 is DeviceUpdateFcmResult.Error -> {
@@ -157,65 +214,9 @@ class DeviceViewModel constructor(
                         Log.d(TAG, "LocalError ${localError.description}, remoteError ${remoteError.description}");
                     }
                 }
-                updateLastError(result.error)
                 return DeviceConnectResult.Error(result.error);
             }
         }
-    }
-
-    suspend fun isPaired() {
-        var result = IAM.getMe(connection.connection)
-    }
-
-    suspend fun upsertDeviceInDatabase(user: User) {
-        pairedDevicesDao.upsertPairedDevice(
-            PairedDeviceEntity(
-                productId,
-                deviceId,
-                user.Sct ?: "",
-                connection.connection.deviceFingerprint,
-                false
-            )
-        )
-    }
-
-    suspend fun getUserAndUpdateState(): DevicePairResult {
-        var me = IAM.getMe(connection.connection);
-        when (me) {
-            is Result.Success<User> -> {
-                upsertDeviceInDatabase(me.data)
-                var updateFcmResult = updateFcm(me.data)
-                when (updateFcmResult) {
-                    is DeviceUpdateFcmResult.Success -> return DevicePairResult.Paired()
-                    is DeviceUpdateFcmResult.Error -> {
-                        updateLastError(updateFcmResult.error)
-                        return DevicePairResult.Error(updateFcmResult.error)
-                    }
-                }
-            }
-            is Result.Error -> {
-                updateLastError(me.exception)
-                DevicePairResult.Error(me.exception)
-            }
-        }
-        return DevicePairResult.Error(Exception("Never here"))
-    }
-
-
-    suspend fun pair(username: String): DevicePairResult {
-        var r = getUserAndUpdateState()
-        when (r) {
-            is DevicePairResult.Paired -> return DevicePairResult.Paired()
-        }
-        // we are not paired or some error happened.
-        val result = IAM.openLocalPair(connection.connection, username)
-        when (result) {
-            is Result.Error -> {
-                updateLastError(result.exception)
-                return DevicePairResult.Error(result.exception)
-            }
-        }
-        return getUserAndUpdateState()
     }
 
     suspend fun updateFcm(user: User): DeviceUpdateFcmResult {
@@ -233,22 +234,6 @@ class DeviceViewModel constructor(
                 pairedDevicesDao.updateFcmStatus(productId, deviceId);
                 return DeviceUpdateFcmResult.Success()
             }
-        }
-    }
-
-    suspend fun reconnect() {
-        connect();
-    }
-
-    fun reconnectClick(view: View) {
-        var action =
-            DeviceDisconnectedFragmentDirections.actionDeviceDisconnectedFragmentToDeviceSettingsFragment(
-                productId,
-                deviceId
-            )
-        view.findNavController().navigate(action);
-        viewModelScope.launch {
-            connect();
         }
     }
 
