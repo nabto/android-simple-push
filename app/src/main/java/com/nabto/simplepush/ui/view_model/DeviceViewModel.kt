@@ -58,7 +58,7 @@ class DeviceViewModel constructor(
 
     val state: MutableLiveData<DeviceViewModelState> = MutableLiveData(DeviceViewModelState.SETTINGS)
 
-    val loading : MutableLiveData<Boolean> = MutableLiveData(false)
+    val loading : MutableLiveData<Boolean> = MutableLiveData(true)
 
     val user: MutableLiveData<User> = MutableLiveData()
 
@@ -75,16 +75,6 @@ class DeviceViewModel constructor(
 
     var lastError: MutableLiveData<String> = MutableLiveData("")
 
-    val notificationAlarmState: LiveData<Boolean> =
-        Transformations.map(user) { u ->
-            u.NotificationCategories?.contains("Alarm")
-        }
-
-    val notificationWarningState: LiveData<Boolean> =
-        Transformations.map(user) { u -> u.NotificationCategories?.contains("Warn") }
-
-    val notificationInfoState: LiveData<Boolean> =
-        Transformations.map(user) { u -> u.NotificationCategories?.contains("Info") }
 
     suspend fun notificationCategoriesChanged(
         category: String,
@@ -167,6 +157,19 @@ class DeviceViewModel constructor(
 
     }
 
+    fun setUser(u : User) {
+        user.postValue(u);
+
+        u.NotificationCategories?.forEach { it ->
+
+            if (!notificationCategoryState.containsKey(it)) {
+                notificationCategoryState[it] = MutableLiveData(false)
+            }
+
+            notificationCategoryState[it]?.postValue(true);
+        }
+    }
+
     suspend fun connect(): DeviceConnectResult {
         var pairedDeviceEntity: PairedDeviceEntity
         try {
@@ -187,7 +190,7 @@ class DeviceViewModel constructor(
                         return DeviceConnectResult.Unpaired()
                     }
                     is GetMeResult.Success -> {
-                        user.postValue(result.user);
+                        setUser(result.user);
                         if (pairedDeviceEntity.updatedFcmToken) {
                             return DeviceConnectResult.Connected()
                         } else {
