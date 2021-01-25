@@ -234,7 +234,7 @@ object IAM {
             try {
                 var coap = connection.createCoap(
                     "POST",
-                    "/iam/fcm-push/"+username
+                    "/iam/users/"+username+"/fcm-test"
                 )
 
                 coap.execute();
