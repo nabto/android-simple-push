@@ -16,7 +16,12 @@ class NotificationCategoryViewModel(val lifecycleScope : LifecycleCoroutineScope
         }
     }
 
-    fun equals(other : NotificationCategoryViewModel) : Boolean{
-        return other.categoryName == categoryName
+    override fun equals(other : Any?) : Boolean{
+        when (other) {
+            is NotificationCategoryViewModel -> {
+                return other.categoryName == categoryName
+            }
+        }
+        return false
     }
 }
