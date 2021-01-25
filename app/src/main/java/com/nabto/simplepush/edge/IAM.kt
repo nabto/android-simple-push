@@ -229,4 +229,28 @@ object IAM {
             }
         }
     }
+    suspend fun sendTestNotification(connection : Connection, username : String) : Result<Empty> {
+        return withContext(Dispatchers.IO) {
+            try {
+                var coap = connection.createCoap(
+                    "POST",
+                    "/iam/fcm-push/"+username
+                )
+
+                coap.execute();
+                if (coap.responseStatusCode != 201) {
+                    return@withContext Result.Error(
+                        WrongStatusCodeException(
+                            201,
+                            coap.responseStatusCode
+                        )
+                    )
+                }
+
+                return@withContext Result.Success<Empty>(Empty())
+            } catch (e: Throwable) {
+                return@withContext Result.Error(e)
+            }
+        }
+    }
 }

@@ -50,6 +50,12 @@ class DeviceSettingsFragment : DeviceFragment() {
             findNavController().navigate(action)
         }
 
+        binding.sendTestNotification.setOnClickListener { view ->
+            lifecycleScope.launch {
+                viewModel.sendTestNotification()
+            }
+        }
+
         binding.reconnect.setOnClickListener { view ->
             lifecycleScope.launch {
                 viewModel.start()

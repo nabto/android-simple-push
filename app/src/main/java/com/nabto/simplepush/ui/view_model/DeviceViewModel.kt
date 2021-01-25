@@ -240,6 +240,17 @@ class DeviceViewModel constructor(
         }
     }
 
+    suspend fun sendTestNotification() {
+        loading.postValue(true)
+        var r = IAM.sendTestNotification(connection.connection, user.value!!.Username)
+        loading.postValue(false)
+        when (r) {
+            is Result.Error -> {
+                setError(r.exception)
+            }
+        }
+    }
+
     companion object {
         public const val TAG : String = "DeviceViewModel"
     }
