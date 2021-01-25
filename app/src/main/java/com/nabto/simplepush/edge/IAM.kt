@@ -37,6 +37,14 @@ class NotificationCategories {
 
 }
 
+class FcmTestResponse(
+    val StatusCode: Int,
+    val Body: String
+) {
+
+}
+
+//
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class Fcm(
     @JsonProperty("Token") val Token: String,
@@ -66,6 +74,9 @@ class WrongStatusCodeException(val expected: Int, val actual: Int) :
 
 class WrongContentFormatException(val expected: Int, val actual: Int) :
     Exception("Wrong content format returned expected: " + expected + " actual: " + actual) {}
+
+class FCMErrorException(val statusCode: Int, val body: String) :
+    Exception("FCM returned statusCode: ${statusCode}, body: ${body}") {}
 
 object IAM {
     suspend fun openLocalPair(
@@ -200,7 +211,7 @@ object IAM {
         }
     }
 
-    suspend fun getNotificationCategories(connection : Connection) : Result<List<String> > {
+    suspend fun getNotificationCategories(connection: Connection): Result<List<String>> {
         return withContext(Dispatchers.IO) {
             try {
                 var coap = connection.createCoap(
@@ -221,7 +232,7 @@ object IAM {
                 var f = CBORFactory();
                 var mapper = ObjectMapper(f);
                 mapper.registerKotlinModule()
-                var categories : List<String> = mapper.readValue<List<String>>(coap.responsePayload)
+                var categories: List<String> = mapper.readValue<List<String>>(coap.responsePayload)
 
                 return@withContext Result.Success<List<String>>(categories)
             } catch (e: Throwable) {
@@ -229,12 +240,13 @@ object IAM {
             }
         }
     }
-    suspend fun sendTestNotification(connection : Connection, username : String) : Result<Empty> {
+
+    suspend fun sendTestNotification(connection: Connection, username: String): Result<Empty> {
         return withContext(Dispatchers.IO) {
             try {
                 var coap = connection.createCoap(
                     "POST",
-                    "/iam/users/"+username+"/fcm-test"
+                    "/iam/users/" + username + "/fcm-test"
                 )
 
                 coap.execute();
@@ -247,7 +259,23 @@ object IAM {
                     )
                 }
 
-                return@withContext Result.Success<Empty>(Empty())
+                var f = CBORFactory();
+                var mapper = ObjectMapper(f);
+                mapper.registerKotlinModule()
+
+                // the fcm response is the response from Firebase to the nabto basestation and the response the basestation returns to the device which is then given to this client.
+                var fcmResponse = mapper.readValue<FcmTestResponse>(coap.responsePayload)
+
+                if (fcmResponse.StatusCode == 200) {
+                    return@withContext Result.Success<Empty>(Empty())
+                } else {
+                    return@withContext Result.Error(
+                        FCMErrorException(
+                            fcmResponse.StatusCode,
+                            fcmResponse.Body
+                        )
+                    )
+                }
             } catch (e: Throwable) {
                 return@withContext Result.Error(e)
             }
