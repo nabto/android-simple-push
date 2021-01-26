@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.nabto.simplepush.databinding.PairedDeviceRowBinding
 import com.nabto.simplepush.ui.view_model.PairedDevicesRowViewModel
 
-class PairedDevicesAdapter() : ListAdapter<PairedDevicesRowViewModel, PairedDevicesAdapter.PairedDeviceViewHolder>(PairedDevicesDiffCallback()) {
+class PairedDevicesAdapter : ListAdapter<PairedDevicesRowViewModel, PairedDevicesAdapter.PairedDeviceViewHolder>(PairedDevicesDiffCallback()) {
 
     class PairedDeviceViewHolder(val binding: PairedDeviceRowBinding ) : RecyclerView.ViewHolder(binding.root)
 
@@ -20,7 +20,7 @@ class PairedDevicesAdapter() : ListAdapter<PairedDevicesRowViewModel, PairedDevi
 
     override fun onBindViewHolder(viewHolder: PairedDeviceViewHolder, position: Int)
     {
-        var pairedDevicesViewModel : PairedDevicesRowViewModel = getItem(position);
+        var pairedDevicesViewModel : PairedDevicesRowViewModel = getItem(position)
         viewHolder.binding.item = pairedDevicesViewModel
 
         viewHolder.binding.executePendingBindings()

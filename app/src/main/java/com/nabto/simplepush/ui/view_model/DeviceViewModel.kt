@@ -26,18 +26,18 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 
 sealed class DeviceConnectResult {
-    class Unpaired() : DeviceConnectResult();
-    class Connected() : DeviceConnectResult();
-    class Error(val error: Throwable) : DeviceConnectResult();
+    class Unpaired : DeviceConnectResult()
+    class Connected : DeviceConnectResult()
+    class Error(val error: Throwable) : DeviceConnectResult()
 }
 
 sealed class DeviceUpdateFcmResult {
-    class Success() : DeviceUpdateFcmResult();
+    class Success : DeviceUpdateFcmResult()
     class Error(val error: Throwable) : DeviceUpdateFcmResult()
 }
 
 sealed class NotificationCategoriesChangedResult {
-    class Success() : NotificationCategoriesChangedResult();
+    class Success : NotificationCategoriesChangedResult()
     class Error(val error: Throwable) : NotificationCategoriesChangedResult()
 }
 
@@ -54,7 +54,7 @@ class DeviceViewModel constructor(
     val deviceId: String
 ) : ViewModel() {
 
-    lateinit var connection: Connection;
+    lateinit var connection: Connection
 
     val state: MutableLiveData<DeviceViewModelState> = MutableLiveData(DeviceViewModelState.SETTINGS)
 
@@ -62,7 +62,7 @@ class DeviceViewModel constructor(
 
     val user: MutableLiveData<User> = MutableLiveData()
 
-    val notificationCategories : MutableLiveData<Set<String>> = MutableLiveData(HashSet<String>())
+    val notificationCategories : MutableLiveData<List<String>> = MutableLiveData(ArrayList<String>())
 
     val notificationCategoryState : HashMap<String, MutableLiveData<Boolean>> = HashMap<String, MutableLiveData<Boolean>>()
 
@@ -80,16 +80,16 @@ class DeviceViewModel constructor(
         category: String,
         state: Boolean
     ) {
-        var u: User = user.value!!;
+        var u: User = user.value!!
         if (u.NotificationCategories == null) {
             u.NotificationCategories = HashSet<String>()
         }
         if (state) {
-            u.NotificationCategories?.add(category);
+            u.NotificationCategories?.add(category)
         } else {
             u.NotificationCategories?.remove(category)
         }
-        user.postValue(u);
+        user.postValue(u)
 
         updateNotificationCategories(u.NotificationCategories!!)
     }
@@ -132,7 +132,7 @@ class DeviceViewModel constructor(
                 state.postValue(DeviceViewModelState.SETTINGS)
             }
             is DeviceConnectResult.Error -> {
-                setError(r.error);
+                setError(r.error)
             }
         }
     }
@@ -144,7 +144,7 @@ class DeviceViewModel constructor(
                 var cats = IAM.getNotificationCategories(connection.connection)
                 when (cats) {
                     is Result.Success<List<String>> -> {
-                        notificationCategories.postValue(HashSet<String>(cats.data))
+                        notificationCategories.postValue(cats.data)
                         return DeviceConnectResult.Connected()
                     }
                     is Result.Error -> {
@@ -152,13 +152,14 @@ class DeviceViewModel constructor(
                     }
                 }
             }
+            else -> {
+                return r
+            }
         }
-        return r;
-
     }
 
     fun setUser(u : User) {
-        user.postValue(u);
+        user.postValue(u)
 
         u.NotificationCategories?.forEach { it ->
 
@@ -166,7 +167,7 @@ class DeviceViewModel constructor(
                 notificationCategoryState[it] = MutableLiveData(false)
             }
 
-            notificationCategoryState[it]?.postValue(true);
+            notificationCategoryState[it]?.postValue(true)
         }
     }
 
@@ -178,7 +179,7 @@ class DeviceViewModel constructor(
             return DeviceConnectResult.Unpaired()
         }
         connection = Connection(nabtoClient, settings, productId, deviceId)
-        var result = connection.connect(pairedDeviceEntity.sct, pairedDeviceEntity.fingerprint);
+        var result = connection.connect(pairedDeviceEntity.sct, pairedDeviceEntity.fingerprint)
         when (result) {
             is ConnectResult.Success -> {
                 var result = IAM.getMe(connection.connection)
@@ -190,7 +191,7 @@ class DeviceViewModel constructor(
                         return DeviceConnectResult.Unpaired()
                     }
                     is GetMeResult.Success -> {
-                        setUser(result.user);
+                        setUser(result.user)
                         if (pairedDeviceEntity.updatedFcmToken) {
                             return DeviceConnectResult.Connected()
                         } else {
@@ -214,18 +215,18 @@ class DeviceViewModel constructor(
                         var remoteError : ErrorCode = e.remoteChannelErrorCode
                         var localError : ErrorCode = e.localChannelErrorCode
 
-                        Log.d(TAG, "LocalError ${localError.description}, remoteError ${remoteError.description}");
+                        Log.d(TAG, "LocalError ${localError.description}, remoteError ${remoteError.description}")
                     }
                 }
-                return DeviceConnectResult.Error(result.error);
+                return DeviceConnectResult.Error(result.error)
             }
         }
     }
 
     suspend fun updateFcm(user: User): DeviceUpdateFcmResult {
-        var t: String = FirebaseMessaging.getInstance().token.await();
+        var t: String = FirebaseMessaging.getInstance().token.await()
 
-        var fcm: Fcm = Fcm(t, application.getString(R.string.project_id));
+        var fcm: Fcm = Fcm(t, application.getString(R.string.project_id))
 
         var r = IAM.setUserFcm(connection.connection, user.Username, fcm)
         when (r) {
@@ -234,7 +235,7 @@ class DeviceViewModel constructor(
                 return DeviceUpdateFcmResult.Error(r.exception)
             }
             is Result.Success<Empty> -> {
-                pairedDevicesDao.updateFcmStatus(productId, deviceId);
+                pairedDevicesDao.updateFcmStatus(productId, deviceId)
                 return DeviceUpdateFcmResult.Success()
             }
         }
@@ -248,11 +249,14 @@ class DeviceViewModel constructor(
             is Result.Error -> {
                 setError(r.exception)
             }
+            else -> {
+                // nothing
+            }
         }
     }
 
     companion object {
-        public const val TAG : String = "DeviceViewModel"
+        const val TAG : String = "DeviceViewModel"
     }
 
 }

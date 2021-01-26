@@ -10,7 +10,7 @@ import com.nabto.simplepush.databinding.PairedDeviceRowBinding
 import com.nabto.simplepush.ui.view_model.NotificationCategoryViewModel
 import com.nabto.simplepush.ui.view_model.PairedDevicesRowViewModel
 
-class NotificationCategoriesAdapter() : ListAdapter<NotificationCategoryViewModel, NotificationCategoriesAdapter.NotificationCategoryViewHolder>(NotificationCategoriesDiffCallback()) {
+class NotificationCategoriesAdapter : ListAdapter<NotificationCategoryViewModel, NotificationCategoriesAdapter.NotificationCategoryViewHolder>(NotificationCategoriesDiffCallback()) {
 
     class NotificationCategoryViewHolder(val binding: NotificationCategoryRowBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -22,7 +22,7 @@ class NotificationCategoriesAdapter() : ListAdapter<NotificationCategoryViewMode
 
     override fun onBindViewHolder(viewHolder: NotificationCategoryViewHolder, position: Int)
     {
-        var notificationCategoryViewModel : NotificationCategoryViewModel = getItem(position);
+        var notificationCategoryViewModel : NotificationCategoryViewModel = getItem(position)
         viewHolder.binding.viewModel = notificationCategoryViewModel
 
         viewHolder.binding.executePendingBindings()

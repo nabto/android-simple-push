@@ -11,8 +11,6 @@ data class PairedDeviceEntity (
     @ColumnInfo(name = "fingerprint") val fingerprint : String,
     @ColumnInfo(name = "updated_fcm_token") val updatedFcmToken : Boolean
     )
-{
-}
 
 
 

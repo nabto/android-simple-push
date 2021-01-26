@@ -9,6 +9,6 @@ data class PairedDevicesRowViewModel(val productId : String, val deviceId : Stri
 
     fun onClick(view : View) {
         val action = PairedDevicesFragmentDirections.actionPairedDevicesFragmentToDeviceSettingsFragment(productId,deviceId)
-        view.findNavController().navigate(action);
+        view.findNavController().navigate(action)
     }
 }

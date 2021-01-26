@@ -28,5 +28,5 @@ fun buildDb(context : Context) : AppDatabase {
         AppDatabase::class.java,
         "simple-push")
         .addMigrations(MIGRATION_1_2)
-        .build();
+        .build()
 }

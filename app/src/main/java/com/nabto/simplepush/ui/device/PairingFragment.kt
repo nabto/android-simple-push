@@ -55,7 +55,7 @@ import javax.inject.Inject
  */
 
 @AndroidEntryPoint
-class PairingFragment() : Fragment() {
+class PairingFragment : Fragment() {
 
     @Inject lateinit var pairedDevicesDao: PairedDevicesDao
 
@@ -65,8 +65,8 @@ class PairingFragment() : Fragment() {
 
     lateinit var binding: PairingFragmentBinding
 
-    lateinit var pairingViewModelFactory: PairingViewModelFactory;
-    lateinit var pairingViewModel: PairingViewModel;
+    lateinit var pairingViewModelFactory: PairingViewModelFactory
+    lateinit var pairingViewModel: PairingViewModel
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -97,12 +97,12 @@ class PairingFragment() : Fragment() {
             findNavController().navigate(action)
         }
 
-        binding!!.pairButton.setOnClickListener { view: View ->
+        binding.pairButton.setOnClickListener { view: View ->
             viewLifecycleOwner.lifecycleScope.launch {
-                pairingViewModel.pair(binding!!.username.text.toString())
+                pairingViewModel.pair(binding.username.text.toString())
             }
         }
-        return binding!!.root
+        return binding.root
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -110,7 +110,7 @@ class PairingFragment() : Fragment() {
         val navController = findNavController()
         val safeArgs: PairingFragmentArgs by navArgs()
         lifecycleScope.launch {
-            pairingViewModel.startPairing();
+            pairingViewModel.startPairing()
         }
     }
 }

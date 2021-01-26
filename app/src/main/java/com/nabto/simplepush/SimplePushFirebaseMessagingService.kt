@@ -19,12 +19,12 @@ import javax.inject.Inject
 
 
 sealed class UpdateTokenResult {
-    class Success() : UpdateTokenResult()
+    class Success : UpdateTokenResult()
     class Error(val error: Throwable) : UpdateTokenResult()
 }
 
 @AndroidEntryPoint
-class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
+class SimplePushFirebaseMessagingService : FirebaseMessagingService() {
 
     @Inject
     lateinit var pairedDevicesDao: PairedDevicesDao
@@ -33,12 +33,12 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
     lateinit var nabtoClient: NabtoClient
 
     @Inject
-    lateinit var settings: Settings;
+    lateinit var settings: Settings
 
     private val job = SupervisorJob()
     private val scope = CoroutineScope(Dispatchers.Main + job)
 
-    private var notificationIdCounter: Int = 0;
+    private var notificationIdCounter: Int = 0
 
     private var CHANNEL_ID : String = "test"
 
@@ -73,7 +73,7 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
             is UpdateTokenResult.Error -> {
                 Log.d(
                     TAG,
-                    "Failed to update token on the device ${device.productId} ${device.deviceId} error: ${result.error.toString()}"
+                    "Failed to update token on the device ${device.productId} ${device.deviceId} error: ${result.error}"
                 )
             }
             is UpdateTokenResult.Success -> {
@@ -88,20 +88,20 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
         token: String
     ): UpdateTokenResult {
         val device = pairedDevicesDao.getDevice(productId, deviceId)
-        var connection: Connection = Connection(nabtoClient, settings, productId, deviceId);
-        var connectResult = connection.connect();
+        var connection: Connection = Connection(nabtoClient, settings, productId, deviceId)
+        var connectResult = connection.connect()
         when (connectResult) {
             is ConnectResult.Error -> return UpdateTokenResult.Error(connectResult.error)
             is ConnectResult.Success -> {
                 var me = IAM.getMe(connection.connection)
                 when (me) {
                     is GetMeResult.Error -> return UpdateTokenResult.Error(me.error)
-                    is GetMeResult.NotPaired -> return UpdateTokenResult.Error(Exception("Not paired"));
+                    is GetMeResult.NotPaired -> return UpdateTokenResult.Error(Exception("Not paired"))
                     is GetMeResult.Success -> {
                         var fcm: Fcm = Fcm(application.getString(R.string.project_id), token)
                         var user = me.user
                         var setFcmResult =
-                            IAM.setUserFcm(connection.connection, user.Username, fcm);
+                            IAM.setUserFcm(connection.connection, user.Username, fcm)
                         when (setFcmResult) {
                             is Result.Success -> return UpdateTokenResult.Success()
                             is Result.Error -> return UpdateTokenResult.Error(setFcmResult.exception)
@@ -125,11 +125,11 @@ class SimplePushFirebaseMessagingService() : FirebaseMessagingService() {
     }
 
     private fun handleMessage(remoteMessage: RemoteMessage) {
-        var notificationManager = getSystemService(Context.NOTIFICATION_SERVICE);
+        var notificationManager = getSystemService(Context.NOTIFICATION_SERVICE)
         createNotificationChannel()
 
         var builder = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_baseline_warning_24)
+            .setSmallIcon(R.drawable.ic_baseline_notifications_24)
             .setContentTitle(remoteMessage.notification?.title)
             .setContentText(remoteMessage.notification?.body)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)

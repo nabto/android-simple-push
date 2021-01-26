@@ -10,14 +10,14 @@ import com.nabto.simplepush.edge.*
 
 sealed class StartPairingResult {
     class Error(val error : Throwable) : StartPairingResult()
-    class IsPAired() : StartPairingResult()
-    class NeedsPairing() : StartPairingResult()
+    class IsPAired : StartPairingResult()
+    class NeedsPairing : StartPairingResult()
 }
 
 sealed class PairResult {
     class Error(val error : Throwable) : PairResult()
-    class Paired() : PairResult()
-    class UsernameExists() : PairResult()
+    class Paired : PairResult()
+    class UsernameExists : PairResult()
 }
 
 enum class PairingViewState {
@@ -81,7 +81,7 @@ class PairingViewModel(val application: Application,
         var me = IAM.getMe(connection.connection)
         when (me) {
             is GetMeResult.Error -> {
-                return StartPairingResult.Error(me.error);
+                return StartPairingResult.Error(me.error)
             }
             is GetMeResult.NotPaired -> {
                 return StartPairingResult.NeedsPairing()
@@ -89,7 +89,7 @@ class PairingViewModel(val application: Application,
 
             is GetMeResult.Success -> {
                 var user = me.user
-                saveDevice(user, connection.connection);
+                saveDevice(user, connection.connection)
                 return StartPairingResult.IsPAired()
             }
         }
@@ -131,14 +131,14 @@ class PairingViewModel(val application: Application,
         var me = IAM.getMe(connection.connection)
         when (me) {
             is GetMeResult.Error -> {
-                return PairResult.Error(me.error);
+                return PairResult.Error(me.error)
             }
             is GetMeResult.NotPaired -> {
                 return PairResult.Error(Exception("Not paired, try again."))
             }
             is GetMeResult.Success -> {
-                var user = me.user;
-                saveDevice(user, connection.connection);
+                var user = me.user
+                saveDevice(user, connection.connection)
                 return PairResult.Paired()
             }
         }

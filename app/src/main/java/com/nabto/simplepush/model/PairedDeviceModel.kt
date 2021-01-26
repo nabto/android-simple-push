@@ -9,15 +9,15 @@ import kotlinx.coroutines.tasks.await
 import kotlin.Exception
 
 sealed class GetUserResult {
-    data class Success(val user : User) : GetUserResult();
-    class NotPaired() : GetUserResult();
-    class NotConnected() : GetUserResult();
+    data class Success(val user : User) : GetUserResult()
+    class NotPaired : GetUserResult()
+    class NotConnected : GetUserResult()
     data class Error(val error : Throwable) : GetUserResult()
 }
 
 sealed class UpdateFcmTokenResult {
-    class Success() : UpdateFcmTokenResult();
-    data class Error(val error: Throwable) : UpdateFcmTokenResult();
+    class Success : UpdateFcmTokenResult()
+    data class Error(val error: Throwable) : UpdateFcmTokenResult()
 }
 
 class PairedDeviceModel(
@@ -30,23 +30,23 @@ class PairedDeviceModel(
         return GetUserResult.Error(NotImplementedError("foo"))
     }
     suspend fun updateFcmToken() : UpdateFcmTokenResult {
-        var connection : Connection = Connection(nabtoClient, settings,productId, deviceId);
+        var connection : Connection = Connection(nabtoClient, settings,productId, deviceId)
 
-        var connectResult = connection.connect();
+        var connectResult = connection.connect()
         when (connectResult) {
             is ConnectResult.Error -> return UpdateFcmTokenResult.Error(connectResult.error)
         }
 
-        var t : String = FirebaseMessaging.getInstance().token.await();
+        var t : String = FirebaseMessaging.getInstance().token.await()
 
-        var fcm : Fcm = Fcm(t, application.getString(R.string.project_id));
+        var fcm : Fcm = Fcm(t, application.getString(R.string.project_id))
 
         var user : User
         var u = IAM.getMe(connection.connection)
         when(u) {
             is GetMeResult.Error -> return UpdateFcmTokenResult.Error(u.error)
             is GetMeResult.NotPaired -> return UpdateFcmTokenResult.Error(Exception("Not paired"))
-            is GetMeResult.Success -> user = u.user;
+            is GetMeResult.Success -> user = u.user
         }
 
         var r = IAM.setUserFcm(connection.connection, user.Username, fcm)
@@ -56,6 +56,6 @@ class PairedDeviceModel(
         }
     }
     suspend fun hasUpdatedFcmToken() : Boolean {
-        return false;
+        return false
     }
 }

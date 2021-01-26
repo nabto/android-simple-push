@@ -6,7 +6,4 @@ import dagger.hilt.android.HiltAndroidApp
 @HiltAndroidApp
 class SimplePushApplication : Application() {
 
-    override fun onCreate() {
-        super.onCreate()
-    }
 }

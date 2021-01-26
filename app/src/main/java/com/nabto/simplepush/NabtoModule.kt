@@ -16,12 +16,12 @@ object NabtoModule {
     @Singleton
     @Provides
     fun provideNabtoClient(@ApplicationContext context : Context) : NabtoClient {
-        return NabtoClient.create(context);
+        return NabtoClient.create(context)
     }
 
     @Singleton
     @Provides
     fun provideSettings(@ApplicationContext context : Context, nabtoClient : NabtoClient) : Settings {
-        return Settings(nabtoClient, context);
+        return Settings(nabtoClient, context)
     }
 }

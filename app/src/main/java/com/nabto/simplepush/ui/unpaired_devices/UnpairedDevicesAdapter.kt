@@ -8,7 +8,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.nabto.simplepush.databinding.UnpairedDeviceRowBinding
 import com.nabto.simplepush.ui.view_model.UnpairedDevicesRowViewModel
 
-class UnpairedDevicesAdapter() : ListAdapter<UnpairedDevicesRowViewModel, UnpairedDevicesAdapter.UnpairedDeviceViewHolder>(UnpairedDevicesDiffCallback()) {
+class UnpairedDevicesAdapter : ListAdapter<UnpairedDevicesRowViewModel, UnpairedDevicesAdapter.UnpairedDeviceViewHolder>(UnpairedDevicesDiffCallback()) {
 
     class UnpairedDeviceViewHolder(val binding : UnpairedDeviceRowBinding) : RecyclerView.ViewHolder(binding.root)
 
@@ -20,7 +20,7 @@ class UnpairedDevicesAdapter() : ListAdapter<UnpairedDevicesRowViewModel, Unpair
 
     override fun onBindViewHolder(viewHolder: UnpairedDeviceViewHolder, position: Int)
     {
-        var unpairedDevicesViewModel : UnpairedDevicesRowViewModel = getItem(position);
+        var unpairedDevicesViewModel : UnpairedDevicesRowViewModel = getItem(position)
         viewHolder.binding.item = unpairedDevicesViewModel
 
         viewHolder.binding.executePendingBindings()

@@ -18,7 +18,7 @@ class PairedDevicesRepositoryImpl constructor(private val pairedDevicesDao : Pai
 ) :PairedDevicesRepository {
     override val pairedDevices: LiveData<List<PairedDevicesRow>> = Transformations.map(pairedDevicesDao.listPairedDevides()) {
         it.map {
-            PairedDevicesRow(it.productId, it.deviceId, it.updatedFcmToken);
+            PairedDevicesRow(it.productId, it.deviceId, it.updatedFcmToken)
         }
     }
     override suspend fun upsertPairedDevice(productId: String, deviceId: String, sct: String, fingerprint: String) : Unit {

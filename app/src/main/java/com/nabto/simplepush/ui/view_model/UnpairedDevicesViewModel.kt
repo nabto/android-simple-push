@@ -4,10 +4,7 @@ import android.content.Context
 import android.widget.Toast
 import androidx.hilt.Assisted
 import androidx.hilt.lifecycle.ViewModelInject
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.*
 import com.nabto.edge.client.NabtoClient
 import com.nabto.simplepush.edge.*
 import com.nabto.simplepush.edge.Result.Success
@@ -21,12 +18,13 @@ import kotlinx.coroutines.withContext
 import java.lang.Exception
 import javax.inject.Inject
 
-class Empty() {}
+class Empty
 
 class UnpairedDevicesViewModel @ViewModelInject constructor(private val nabtoClient: NabtoClient,
                                                             private val settings: Settings,
                                                             private val pairedDevicesRepository: PairedDevicesRepository,
                                                             @ApplicationContext val context : Context) : ViewModel() {
-    val scanner = MdnsScanner(nabtoClient, "simplepush");
-    val devices : LiveData<List<MdnsDevice>> = scanner.devices;
+    val scanner = MdnsScanner(nabtoClient, "simplepush")
+    val devices : LiveData<List<MdnsDevice>> = scanner.devices
+    val showLoader : LiveData<Boolean> = Transformations.map(devices) { ds -> (ds.size == 0) }
 }

@@ -9,7 +9,7 @@ import org.json.JSONObject
 import kotlin.Exception
 
 sealed class ConnectResult {
-    class Success() : ConnectResult()
+    class Success : ConnectResult()
     data class Error(var error: Throwable) : ConnectResult()
 }
 
@@ -25,27 +25,27 @@ class CoapResponse {
 }
 
 sealed class CoapRequestResult {
-    class Success(val coapResponse : CoapResponse) : CoapRequestResult() {}
-    class NotConnected() : CoapRequestResult() {}
-    class Error(val error : Throwable) : CoapRequestResult() {}
+    class Success(val coapResponse : CoapResponse) : CoapRequestResult()
+    class NotConnected : CoapRequestResult()
+    class Error(val error : Throwable) : CoapRequestResult()
 }
 
 class Connection(val nabtoClient : NabtoClient, val settings: Settings, val productId: String, val deviceId: String) {
-    val connection : com.nabto.edge.client.Connection = nabtoClient.createConnection();
+    val connection : com.nabto.edge.client.Connection = nabtoClient.createConnection()
     suspend fun connect() : ConnectResult {
         return withContext(Dispatchers.IO) {
             var options : JSONObject = JSONObject()
-            options.put("ProductId", productId);
-            options.put("DeviceId", deviceId);
+            options.put("ProductId", productId)
+            options.put("DeviceId", deviceId)
             options.put("PrivateKey", settings.getPrivateKey())
             options.put("ServerKey", settings.getNabtoServerKey())
             options.put("ServerUrl", settings.getNabtoServerUrl(productId))
 
-            connection.updateOptions(options.toString());
+            connection.updateOptions(options.toString())
             try {
                 connection.connect()
             } catch (e: Exception) {
-                return@withContext ConnectResult.Error(e);
+                return@withContext ConnectResult.Error(e)
             }
             return@withContext ConnectResult.Success()
         }
@@ -54,18 +54,18 @@ class Connection(val nabtoClient : NabtoClient, val settings: Settings, val prod
     suspend fun connect(sct: String, fingerprint: String): ConnectResult {
         return withContext(Dispatchers.IO) {
             var options: JSONObject = JSONObject()
-            options.put("ProductId", productId);
-            options.put("DeviceId", deviceId);
+            options.put("ProductId", productId)
+            options.put("DeviceId", deviceId)
             options.put("PrivateKey", settings.getPrivateKey())
             options.put("ServerKey", settings.getNabtoServerKey())
             options.put("ServerUrl", settings.getNabtoServerUrl(productId))
             options.put("ServerConnectToken", sct)
 
-            connection.updateOptions(options.toString());
+            connection.updateOptions(options.toString())
             try {
                 connection.connect()
             } catch (e: Exception) {
-                return@withContext ConnectResult.Error(e);
+                return@withContext ConnectResult.Error(e)
             }
             if (connection.deviceFingerprint == fingerprint) {
                 return@withContext ConnectResult.Success()
@@ -82,7 +82,7 @@ class Connection(val nabtoClient : NabtoClient, val settings: Settings, val prod
         var result = coapRequestConnected(coapRequest)
         when (result) {
             is CoapRequestResult.NotConnected -> {
-                var r = connect();
+                var r = connect()
                 when (r) {
                     is ConnectResult.Error -> return CoapRequestResult.Error(r.error)
                     is ConnectResult.Success -> return coapRequestConnected(coapRequest)
@@ -93,7 +93,7 @@ class Connection(val nabtoClient : NabtoClient, val settings: Settings, val prod
     }
 
     suspend fun coapRequestConnected(coapRequest: CoapRequest) : CoapRequestResult {
-        var coap = connection.createCoap(coapRequest.method, coapRequest.path);
+        var coap = connection.createCoap(coapRequest.method, coapRequest.path)
         if (coapRequest.payload != null) {
             coap.setRequestPayload(coapRequest.contentFormat, coapRequest.payload)
         }

@@ -23,34 +23,29 @@ sealed class Result<out R> {
 
 sealed class GetMeResult {
     class Error(val error: Throwable) : GetMeResult()
-    class NotPaired() : GetMeResult()
+    class NotPaired : GetMeResult()
     class Success(val user: User) : GetMeResult()
 }
 
 sealed class OpenLocalPairResult {
     class Error(val error: Throwable) : OpenLocalPairResult()
-    class UsernameExists() : OpenLocalPairResult()
-    class Success() : OpenLocalPairResult()
+    class UsernameExists : OpenLocalPairResult()
+    class Success : OpenLocalPairResult()
 }
 
-class NotificationCategories {
-
-}
+class NotificationCategories
 
 class FcmTestResponse(
     val StatusCode: Int,
     val Body: String
-) {
-
-}
+)
 
 //
 @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY)
 class Fcm(
     @JsonProperty("Token") val Token: String,
     @JsonProperty("ProjectId") val ProjectId: String
-) {
-}
+)
 
 class User(
     val Username: String,
@@ -60,23 +55,22 @@ class User(
     val Role: String?,
     val Fcm: Fcm?,
     var NotificationCategories: HashSet<String>?
-) {
-}
+)
 
-class LocalOpenPairRequest() {
+class LocalOpenPairRequest {
     @JsonProperty("Username", required = true)
     var username: String = ""
 
 }
 
 class WrongStatusCodeException(val expected: Int, val actual: Int) :
-    Exception("Wrong status returned expected: " + expected + " actual: " + actual) {}
+    Exception("Wrong status returned expected: " + expected + " actual: " + actual)
 
 class WrongContentFormatException(val expected: Int, val actual: Int) :
-    Exception("Wrong content format returned expected: " + expected + " actual: " + actual) {}
+    Exception("Wrong content format returned expected: " + expected + " actual: " + actual)
 
 class FCMErrorException(val statusCode: Int, val body: String) :
-    Exception("FCM returned statusCode: ${statusCode}, body: ${body}") {}
+    Exception("FCM returned statusCode: ${statusCode}, body: ${body}")
 
 object IAM {
     suspend fun openLocalPair(
@@ -86,13 +80,13 @@ object IAM {
         return withContext(Dispatchers.IO) {
             try {
                 var coap = connection.createCoap("POST", "iam/pairing/local-open")
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
-                var r = LocalOpenPairRequest();
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
+                var r = LocalOpenPairRequest()
                 r.username = username
-                val cborData = mapper.writeValueAsBytes(r);
-                coap.setRequestPayload(60, cborData);
-                coap.execute();
+                val cborData = mapper.writeValueAsBytes(r)
+                coap.setRequestPayload(CBOR_CONTENT_FORMAT, cborData)
+                coap.execute()
                 var result: Result<Unit>
                 if (coap.responseStatusCode == 409) {
                     return@withContext OpenLocalPairResult.UsernameExists()
@@ -105,10 +99,10 @@ object IAM {
                         )
                     )
                 } else {
-                    return@withContext OpenLocalPairResult.Success();
+                    return@withContext OpenLocalPairResult.Success()
                 }
             } catch (e: Throwable) {
-                return@withContext OpenLocalPairResult.Error(e);
+                return@withContext OpenLocalPairResult.Error(e)
             }
         }
     }
@@ -129,7 +123,7 @@ object IAM {
                         )
                     )
                 }
-                if (coap.responseContentFormat != 60) {
+                if (coap.responseContentFormat != CBOR_CONTENT_FORMAT) {
                     return@withContext GetMeResult.Error(
                         WrongContentFormatException(
                             60,
@@ -137,13 +131,13 @@ object IAM {
                         )
                     )
                 }
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
                 mapper.registerKotlinModule()
                 var user = mapper.readValue<User>(coap.responsePayload)
                 return@withContext GetMeResult.Success(user)
             } catch (e: Throwable) {
-                return@withContext GetMeResult.Error(e);
+                return@withContext GetMeResult.Error(e)
             }
         }
     }
@@ -153,11 +147,11 @@ object IAM {
             try {
                 var coap = connection.createCoap("PUT", "/iam/users/" + username + "/fcm")
 
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
-                val cborData = mapper.writeValueAsBytes(fcm);
-                coap.setRequestPayload(60, cborData);
-                coap.execute();
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
+                val cborData = mapper.writeValueAsBytes(fcm)
+                coap.setRequestPayload(CBOR_CONTENT_FORMAT, cborData)
+                coap.execute()
                 var result: Result<Empty>
                 if (coap.responseStatusCode != 204) {
                     result = Result.Error(
@@ -167,11 +161,11 @@ object IAM {
                         )
                     )
                 } else {
-                    result = Result.Success<Empty>(Empty());
+                    result = Result.Success<Empty>(Empty())
                 }
                 return@withContext result
             } catch (e: Throwable) {
-                return@withContext Result.Error(e);
+                return@withContext Result.Error(e)
             }
         }
     }
@@ -188,11 +182,11 @@ object IAM {
                     "/iam/users/" + username + "/notification-categories"
                 )
 
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
-                val cborData = mapper.writeValueAsBytes(categories);
-                coap.setRequestPayload(60, cborData);
-                coap.execute();
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
+                val cborData = mapper.writeValueAsBytes(categories)
+                coap.setRequestPayload(CBOR_CONTENT_FORMAT, cborData)
+                coap.execute()
                 var result: Result<Empty>
                 if (coap.responseStatusCode != 204) {
                     result = Result.Error(
@@ -202,7 +196,7 @@ object IAM {
                         )
                     )
                 } else {
-                    result = Result.Success<Empty>(Empty());
+                    result = Result.Success<Empty>(Empty())
                 }
                 return@withContext result
             } catch (e: Throwable) {
@@ -219,7 +213,7 @@ object IAM {
                     "/iam/notification-categories"
                 )
 
-                coap.execute();
+                coap.execute()
                 if (coap.responseStatusCode != 205) {
                     return@withContext Result.Error(
                         WrongStatusCodeException(
@@ -228,9 +222,17 @@ object IAM {
                         )
                     )
                 }
+                if (coap.responseContentFormat != CBOR_CONTENT_FORMAT) {
+                    return@withContext Result.Error(
+                        WrongContentFormatException(
+                            60,
+                            coap.responseContentFormat
+                        )
+                    )
+                }
 
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
                 mapper.registerKotlinModule()
                 var categories: List<String> = mapper.readValue<List<String>>(coap.responsePayload)
 
@@ -249,7 +251,7 @@ object IAM {
                     "/iam/users/" + username + "/fcm-test"
                 )
 
-                coap.execute();
+                coap.execute()
                 if (coap.responseStatusCode != 201) {
                     return@withContext Result.Error(
                         WrongStatusCodeException(
@@ -258,9 +260,17 @@ object IAM {
                         )
                     )
                 }
+                if (coap.responseContentFormat != CBOR_CONTENT_FORMAT) {
+                    return@withContext Result.Error(
+                        WrongContentFormatException(
+                            60,
+                            coap.responseContentFormat
+                        )
+                    )
+                }
 
-                var f = CBORFactory();
-                var mapper = ObjectMapper(f);
+                var f = CBORFactory()
+                var mapper = ObjectMapper(f)
                 mapper.registerKotlinModule()
 
                 // the fcm response is the response from Firebase to the nabto basestation and the response the basestation returns to the device which is then given to this client.
@@ -281,4 +291,6 @@ object IAM {
             }
         }
     }
+    const val CBOR_CONTENT_FORMAT : Int = 60
 }
+

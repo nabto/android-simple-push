@@ -38,6 +38,7 @@ class UnpairedDevicesFragment : Fragment() {
         val unpairedDevicesAdapter = UnpairedDevicesAdapter()
 
         binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
+        binding.lifecycleOwner = viewLifecycleOwner
 
         viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l.map { UnpairedDevicesRowViewModel(it.productId,it.deviceId) }) })
         return binding.root

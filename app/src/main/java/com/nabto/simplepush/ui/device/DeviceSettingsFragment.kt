@@ -22,7 +22,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class DeviceSettingsFragment : DeviceFragment() {
-    lateinit private var binding: DeviceSettingsFragmentBinding
+    private lateinit var binding: DeviceSettingsFragmentBinding
 
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -39,13 +39,13 @@ class DeviceSettingsFragment : DeviceFragment() {
 
 
         val notificationCategoriesAdapter = NotificationCategoriesAdapter()
-        binding.notificationCategoriesList?.adapter = notificationCategoriesAdapter
+        binding.notificationCategoriesList.adapter = notificationCategoriesAdapter
 
         viewModel.notificationCategories.observe(viewLifecycleOwner, Observer {
                 l -> notificationCategoriesAdapter.submitList(l.map { NotificationCategoryViewModel(lifecycleScope, viewModel, it) })
         })
 
-        binding.notPaired.setOnClickListener { view ->
+        binding.notPaired.setOnClickListener {
             var action = DeviceSettingsFragmentDirections.actionDeviceSettingsFragmentToDevicePairFragment(safeArgs.productId, safeArgs.deviceId)
             findNavController().navigate(action)
         }
@@ -68,7 +68,7 @@ class DeviceSettingsFragment : DeviceFragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         lifecycleScope.launch {
-            viewModel.start();
+            viewModel.start()
         }
     }
 }
