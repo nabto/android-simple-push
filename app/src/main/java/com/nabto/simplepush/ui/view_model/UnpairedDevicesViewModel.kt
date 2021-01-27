@@ -26,5 +26,7 @@ class UnpairedDevicesViewModel @ViewModelInject constructor(private val nabtoCli
                                                             @ApplicationContext val context : Context) : ViewModel() {
     val scanner = MdnsScanner(nabtoClient, "simplepush")
     val devices : LiveData<List<MdnsDevice>> = scanner.devices
-    val showLoader : LiveData<Boolean> = Transformations.map(devices) { ds -> (ds.size == 0) }
+    val showLoader : LiveData<Boolean> = Transformations.map(devices) {
+            ds -> (ds.size == 0)
+    }
 }

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="nabto_server_key">sk-961f95523bba03c38e35d455ec95a741</string>
-    <string name="nabto_server_url_suffix">.clients.dev.nabto.net</string>
+    <string name="nabto_server_key">sk-b0b26790a9ae125339a6346ba3484a97</string>
+    <string name="nabto_server_url_suffix">.clients.nabto.net</string>
 </resources>

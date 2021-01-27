@@ -18,13 +18,6 @@ import kotlinx.coroutines.withContext
 @AndroidEntryPoint
 class UnpairedDevicesFragment : Fragment() {
 
-    //companion object {
-    //    fun newInstance() = UnpairedDevicesFragment()
-    //}
-
-    // Scoped to the lifecycle of the fragment's view (between onCreateView and onDestroyView)
-    private var unpairedDevicesFragmentBinding: UnpairedDevicesFragmentBinding? = null
-
     private val viewModel: UnpairedDevicesViewModel by viewModels()
 
     override fun onCreateView(
@@ -33,20 +26,16 @@ class UnpairedDevicesFragment : Fragment() {
     ): View? {
         // Inflate the layout for this fragment
         val binding = UnpairedDevicesFragmentBinding.inflate(inflater, container, false)
-        unpairedDevicesFragmentBinding = binding
 
         val unpairedDevicesAdapter = UnpairedDevicesAdapter()
 
-        binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
+        binding.viewModel = viewModel
         binding.lifecycleOwner = viewLifecycleOwner
+
+        binding.unpairedDevicesList.adapter = unpairedDevicesAdapter
 
         viewModel.devices.observe(viewLifecycleOwner, Observer { l -> unpairedDevicesAdapter.submitList(l.map { UnpairedDevicesRowViewModel(it.productId,it.deviceId) }) })
         return binding.root
     }
 
-    override fun onDestroyView() {
-        // Consider not storing the binding instance in a field, if not needed.
-        unpairedDevicesFragmentBinding = null
-        super.onDestroyView()
-    }
 }
